@@ -215,8 +215,16 @@ html, body { max-width: 100%; overflow-x: clip; }
 
 .layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 18px; }
 @media (max-width: 980px) { .layout { grid-template-columns: minmax(0, 1fr); } }
-.sidebar { position: sticky; top: 78px; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); min-width: 0; }
-@media (max-width: 980px) { .sidebar { position: static; } }
+.sidebar {
+  position: sticky; top: 78px; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); min-width: 0;
+  /* pinned, but never taller than the screen: it scrolls on its own so every input stays reachable */
+  max-height: calc(100vh - 92px); max-height: calc(100dvh - 92px);
+  overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; margin-right: -4px;
+  scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent;
+}
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+@media (max-width: 980px) { .sidebar { position: static; max-height: none; overflow: visible; padding-right: 0; margin-right: 0; } }
 .main { display: grid; gap: 16px; min-width: 0; grid-template-columns: minmax(0, 1fr); }
 .main > *, .sidebar > *, .grid > * { min-width: 0; }
 
