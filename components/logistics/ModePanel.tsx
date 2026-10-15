@@ -132,7 +132,7 @@ export default function ModePanel({
             <Check
               checked={inp.fobDeposit}
               onChange={(v) => set({ fobDeposit: v })}
-              hint="Per supply pallet deposited into a FOB. Small and large crates don’t get it. Your figure — not in the patch notes."
+              hint="Per supply pallet deposited into a FOB. Small and large crates don’t get it."
             >
               FOB deposit award (+{fmtCash(inp.fobAmount)} per supply pallet)
             </Check>
@@ -253,7 +253,7 @@ export default function ModePanel({
             </div>
             {!people && <NumberField label="Pallet price" unit="$" step={50} value={inp.palletCost} onChange={(v) => set({ palletCost: v })} />}
             <small className="muted" style={{ fontSize: 12 }}>
-              Prices aren’t in the patch notes — set them to what you pay. Costs only affect cash. Rewards assume full crates.
+              Set these to what you pay. Costs only affect cash. Rewards assume full crates.
             </small>
           </div>
         </details>

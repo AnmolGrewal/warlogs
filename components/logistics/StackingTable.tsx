@@ -114,7 +114,7 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                 <td><A v="yes">Pallets only</A></td>
                 <td>—</td>
                 <td className="wrap muted">
-                  Not in any patch notes. Calculator adds your figure (default +$1,800 per supply pallet, on by default) in both seasons. Small and large crates
+                  Default +$1,800 per supply pallet, on by default, in both seasons. Small and large crates
                   don’t get it. Notes only say FOB Supplied Assist is now split between assisting players.
                 </td>
               </tr>

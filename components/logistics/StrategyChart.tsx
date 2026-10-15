@@ -248,7 +248,7 @@ export default function StrategyChart({ mode, inp }: { mode: Mode; inp: Inputs }
         </p>
         <p>
           Season 2 gross: round trips {fmtCash(s2.rt.gross)} | respawn {fmtCash(s2.rs.gross)}
-          {inp.fobDeposit && inp.pallets > 0 ? `, including a ${fmtCash(inp.fobAmount)} FOB deposit award per pallet (your figure — not in the patch notes)` : ""}. Net includes a {fmtCash(inp.vehicleCost)} truck — bought once for round trips,{" "}
+          {inp.fobDeposit && inp.pallets > 0 ? `, including a ${fmtCash(inp.fobAmount)} FOB deposit award per pallet` : ""}. Net includes a {fmtCash(inp.vehicleCost)} truck — bought once for round trips,{" "}
           {trucksRespawn}× ({fmtCash(inp.vehicleCost * trucksRespawn)}) when you abandon it every run — plus cargo each run.
         </p>
         <p>

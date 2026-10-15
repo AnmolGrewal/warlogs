@@ -95,12 +95,12 @@ export interface Inputs {
   heliReturnTrip: boolean; // does a helicopter get the return-trip reward? (not in notes)
   deathResetsStreaks: boolean; // does respawning break your delivery streak?
   streakRule: StreakRule;
-  // money (purchase prices are NOT in the patch notes — editable assumptions)
+  // money (purchase prices — editable)
   vehicleCost: number; // bought once for round trips; bought again every run if you respawn (you abandon it)
   smallCost: number; // price per small crate, bought every run
   largeCost: number; // price per large crate
   palletCost: number; // price per pallet
-  // FOB deposit award — the player's figure, NOT in any patch notes. Supply pallets only.
+  // FOB deposit award. Supply pallets only.
   fobDeposit: boolean;
   fobAmount: number; // cash per supply pallet deposited into a FOB
   // session
