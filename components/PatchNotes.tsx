@@ -89,7 +89,8 @@ export default function PatchNotes() {
     if (!el) return;
     const apply = () => {
       const header = document.querySelector(".site-header") as HTMLElement | null;
-      const offset = (header?.offsetHeight ?? 60) + el.offsetHeight + 16;
+      const stuck = getComputedStyle(el).position === "sticky";
+      const offset = (header?.offsetHeight ?? 60) + (stuck ? el.offsetHeight : 0) + 16;
       document.documentElement.style.setProperty("--stick-offset", `${offset}px`);
     };
     apply();
@@ -108,7 +109,8 @@ export default function PatchNotes() {
     e.preventDefault();
     const header = document.querySelector(".site-header") as HTMLElement | null;
     const sticky = stickyRef.current;
-    const offset = (header?.offsetHeight ?? 60) + (sticky?.offsetHeight ?? 0) + 16;
+    const stuck = sticky ? getComputedStyle(sticky).position === "sticky" : false;
+    const offset = (header?.offsetHeight ?? 60) + (stuck && sticky ? sticky.offsetHeight : 0) + 16;
     const top = target.getBoundingClientRect().top + window.scrollY - offset;
     window.scrollTo({ top, behavior: "smooth" });
     try {
@@ -183,7 +185,7 @@ export default function PatchNotes() {
       <OverviewCharts />
 
       {/* Filters */}
-      <div ref={stickyRef} className="panel section" style={{ position: "sticky", top: 68, zIndex: 20 }}>
+      <div ref={stickyRef} className="panel section filter-bar">
         <div className="toolbar">
           <input className="search" placeholder="Search changes… e.g. helmet, crate, Havoc" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search changes" />
           {TAGS.map((t) => (
