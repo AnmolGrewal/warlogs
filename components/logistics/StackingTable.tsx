@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { oneOf, usePersistentState } from "@/lib/usePersistentState";
 import {
   RATES,
   breakEven,
@@ -32,7 +32,7 @@ const MODE_LABEL: Record<Mode, string> = {
 };
 
 export default function StackingTable({ inputs, metric, setMetric }: { inputs: Record<Mode, Inputs>; metric: Metric; setMetric: (m: Metric) => void }) {
-  const [rule, setRule] = useState<StreakRule>("fromFirst");
+  const [rule, setRule] = usePersistentState<StreakRule>("warlogs-ladder-rule", "fromFirst", oneOf<StreakRule>("fromFirst", "afterFirst", "perRun"));
   const ladder = Array.from({ length: rule === "afterFirst" ? 26 : 25 }, (_, i) => i + 1);
   const S2C = RATES.s2.streaks!;
   const stepsFor = (k: number, cap: number) => Math.max(0, Math.min(rule === "afterFirst" ? k - 1 : k, cap));
@@ -107,6 +107,16 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                 <td><A v="yes" /></td>
                 <td><A v="yes">Own counter</A></td>
                 <td className="wrap muted">{`+${fmtCash(S2C.returnTrip.cash)} / +${S2C.returnTrip.xp} XP per trip in a row, up to 10.`} Drivers run this <b>and</b> the delivery streaks at the same time.</td>
+              </tr>
+              <tr>
+                <td>FOB deposit award (optional)</td>
+                <td><A v="yes">Pallets only</A></td>
+                <td><A v="yes">Pallets only</A></td>
+                <td>—</td>
+                <td className="wrap muted">
+                  Not in any patch notes. Calculator adds your figure (default +$1,800 per supply pallet, on by default) in both seasons. Small and large crates
+                  don’t get it. Notes only say FOB Supplied Assist is now split between assisting players.
+                </td>
               </tr>
               <tr>
                 <td>Respawn at base instead of driving back</td>

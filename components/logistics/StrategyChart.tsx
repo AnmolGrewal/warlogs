@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { oneOf, usePersistentState } from "@/lib/usePersistentState";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   RATES,
@@ -56,8 +57,8 @@ function tickList(session: number, step: number): number[] {
 
 /** Round trips vs drop-off-and-respawn over one match, for ground vehicles. */
 export default function StrategyChart({ mode, inp }: { mode: Mode; inp: Inputs }) {
-  const [metric, setMetric] = useState<Metric>("cash");
-  const [show, setShow] = useState<"both" | "s2">("both");
+  const [metric, setMetric] = usePersistentState<Metric>("warlogs-strategy-metric", "cash", oneOf<Metric>("cash", "xp"));
+  const [show, setShow] = usePersistentState<"both" | "s2">("warlogs-strategy-seasons", "both", oneOf<"both" | "s2">("both", "s2"));
 
   const d = useMemo(() => {
     const lines = LINES.filter((l) => show === "both" || l.season === "s2").map((l) => ({
@@ -246,7 +247,8 @@ export default function StrategyChart({ mode, inp }: { mode: Mode; inp: Inputs }
           </b>
         </p>
         <p>
-          Season 2 gross: round trips {fmtCash(s2.rt.gross)} | respawn {fmtCash(s2.rs.gross)}. Net includes a {fmtCash(inp.vehicleCost)} truck — bought once for round trips,{" "}
+          Season 2 gross: round trips {fmtCash(s2.rt.gross)} | respawn {fmtCash(s2.rs.gross)}
+          {inp.fobDeposit && inp.pallets > 0 ? `, including a ${fmtCash(inp.fobAmount)} FOB deposit award per pallet (your figure — not in the patch notes)` : ""}. Net includes a {fmtCash(inp.vehicleCost)} truck — bought once for round trips,{" "}
           {trucksRespawn}× ({fmtCash(inp.vehicleCost * trucksRespawn)}) when you abandon it every run — plus cargo each run.
         </p>
         <p>

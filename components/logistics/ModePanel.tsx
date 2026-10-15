@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { oneOf, usePersistentState } from "@/lib/usePersistentState";
 import {
   Bar,
   BarChart,
@@ -23,6 +24,7 @@ import {
   effectiveStrategy,
   firstRunS2Wins,
   fmt,
+  fmtCash,
   fmtMin,
   isAir,
   minutesToLevel,
@@ -66,7 +68,7 @@ export default function ModePanel({
   const air = isAir(mode);
   const people = mode === "heliPeople" || mode === "driverPeople";
   const strategy = effectiveStrategy(mode, inp);
-  const [beSeason, setBeSeason] = useState<Season>("s2");
+  const [beSeason, setBeSeason] = usePersistentState<Season>("warlogs-breakeven-season", "s2", oneOf<Season>("s1", "s2"));
   const unit = metric === "xp" ? "XP" : "$";
 
   const calc = useMemo(() => {
@@ -122,10 +124,25 @@ export default function ModePanel({
             value={metric}
             onChange={setMetric}
             options={[
-              { value: "xp", label: "XP (levelling)" },
+              { value: "xp", label: "XP" },
               { value: "cash", label: "Cash" },
             ]}
           />
+          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+            <Check
+              checked={inp.fobDeposit}
+              onChange={(v) => set({ fobDeposit: v })}
+              hint="Per supply pallet deposited into a FOB. Small and large crates don’t get it. Your figure — not in the patch notes."
+            >
+              FOB deposit award (+{fmtCash(inp.fobAmount)} per supply pallet)
+            </Check>
+            {inp.fobDeposit && (
+              <NumberField label="FOB award per pallet" unit="$" step={100} value={inp.fobAmount} onChange={(v) => set({ fobAmount: v })} />
+            )}
+          </div>
+          <p className="sub" style={{ marginTop: 10, marginBottom: 0, fontSize: 12 }}>
+            Everything you change here is saved in this browser. “Reset” restores the defaults for this tab.
+          </p>
         </div>
 
         <div className="panel grid" style={{ gap: 12 }}>
@@ -515,6 +532,7 @@ export default function ModePanel({
                       <th className="n">Return streak</th>
                     </>
                   )}
+                  {metric === "cash" && inp.fobDeposit && inp.pallets > 0 && <th className="n">FOB award</th>}
                   {metric === "cash" && <th className="n">Spend</th>}
                   <th className="n">S2 run</th>
                   <th className="n">S1 run</th>
@@ -555,6 +573,7 @@ export default function ModePanel({
                           <td className="n s2c">+{v(r.b.returnStreak)}</td>
                         </>
                       )}
+                      {metric === "cash" && inp.fobDeposit && inp.pallets > 0 && <td className="n yes">+{fmt(r.b.fob.cash, "cash")}</td>}
                       {metric === "cash" && <td className="n no">{r.b.spend ? "−" + fmt(r.b.spend, "cash") : "—"}</td>}
                       <td className="n" style={{ fontWeight: 700 }}>
                         {fmt(metric === "xp" ? r.xp : r.cash, metric)}

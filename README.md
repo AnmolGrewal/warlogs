@@ -78,5 +78,8 @@ Season 2 streaks: crates **+$100 / +50 XP** per crate in a row (cap 10), pallets
 - Perfect runs, no losses. Truck and crate prices aren't in the notes: defaults are a $5,000 truck, $200 small / $400 large crate, $400 pallet. Default cargo: driver 2 pallets, helicopter 1 pallet, no crates. Round trips buy the truck once; drop-and-respawn buys a new one every run.
 - Default timings: helicopter 4 min round trip, driving 4.5 min each way (9 min round trip), 1 min respawn, 90-minute match.
 - Streaks carry over between runs as long as you keep going.
+- FOB deposit award: +$1,800 cash per supply pallet deposited into a FOB, on by default, both seasons. Small and large crates don't get it. This figure is not in any patch notes — switch it off or change the amount at the top of each tab.
+
+Every setting (inputs on each tab, the XP/Cash toggle, chart toggles) is saved in your browser's localStorage. "Reset" restores the defaults for that tab.
 
 Source: [WARDOGS | Season 02 Patch Notes](https://store.steampowered.com/news/app/1867240/view/670630562731396445), 14 Oct 2026. Fan-made, not affiliated with BULKHEAD or Team17.

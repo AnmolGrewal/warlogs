@@ -100,6 +100,9 @@ export interface Inputs {
   smallCost: number; // price per small crate, bought every run
   largeCost: number; // price per large crate
   palletCost: number; // price per pallet
+  // FOB deposit award — the player's figure, NOT in any patch notes. Supply pallets only.
+  fobDeposit: boolean;
+  fobAmount: number; // cash per supply pallet deposited into a FOB
   // session
   sessionMin: number;
 }
@@ -109,6 +112,7 @@ const BASE: Inputs = {
   small: 0, large: 0, pallets: 0, passengers: 0,
   strategy: "driveBack", heliReturnTrip: false, deathResetsStreaks: true, streakRule: "fromFirst",
   vehicleCost: 0, smallCost: 200, largeCost: 400, palletCost: 400,
+  fobDeposit: true, fobAmount: 1800,
   sessionMin: 90,
 };
 
@@ -130,6 +134,7 @@ export interface Breakdown {
   players: Reward;
   playerStreak: Reward;
   returnTrip: Reward;
+  fob: Reward; // FOB deposit award (pallets only, optional)
   returnStreak: Reward;
   spend: number;
 }
@@ -221,7 +226,7 @@ export function simulate(
     }
     const b: Breakdown = {
       crates: zero(), crateStreak: zero(), pallets: zero(), palletStreak: zero(),
-      players: zero(), playerStreak: zero(), returnTrip: zero(), returnStreak: zero(),
+      players: zero(), playerStreak: zero(), returnTrip: zero(), returnStreak: zero(), fob: zero(),
       spend:
         inp.small * inp.smallCost +
         inp.large * inp.largeCost +
@@ -265,7 +270,10 @@ export function simulate(
     st.player += inp.passengers;
     if (returnPaid) st.returnTrip += 1;
 
-    const parts = [b.crates, b.crateStreak, b.pallets, b.palletStreak, b.players, b.playerStreak, b.returnTrip, b.returnStreak];
+    // FOB deposit award: same in both seasons, supply pallets only (small/large crates don't get it)
+    if (inp.fobDeposit) b.fob = { cash: inp.pallets * inp.fobAmount, xp: 0 };
+
+    const parts = [b.crates, b.crateStreak, b.pallets, b.palletStreak, b.players, b.playerStreak, b.returnTrip, b.returnStreak, b.fob];
     const cash = parts.reduce((a, p) => a + p.cash, 0) - b.spend;
     const xp = parts.reduce((a, p) => a + p.xp, 0);
     cumCash += cash;
