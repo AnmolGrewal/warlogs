@@ -72,8 +72,8 @@ export default function OverviewCharts() {
       <div className="panel">
         <div className="panel-head">
           <div>
-            <h3>Buffs vs nerfs by category</h3>
-            <p className="sub">Count of changes we tagged in each area.</p>
+            <h3>Season 2 at a glance</h3>
+            <p className="sub">Where the patch pushed things up, pulled things back, or added something new.</p>
           </div>
         </div>
         <div className="chart-box">
