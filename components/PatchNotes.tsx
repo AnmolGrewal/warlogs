@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CATEGORIES, TAG_META, type Note, type Tag } from "@/lib/patchNotes";
 import OverviewCharts from "@/components/charts/OverviewCharts";
 
@@ -81,6 +81,42 @@ function Delta({ note }: { note: Note }) {
 export default function PatchNotes() {
   const [active, setActive] = useState<Set<Tag>>(new Set());
   const [q, setQ] = useState("");
+  const stickyRef = useRef<HTMLDivElement>(null);
+
+  // Keep category headers clear of the site header + sticky filter bar when jumping to them
+  useEffect(() => {
+    const el = stickyRef.current;
+    if (!el) return;
+    const apply = () => {
+      const header = document.querySelector(".site-header") as HTMLElement | null;
+      const offset = (header?.offsetHeight ?? 60) + el.offsetHeight + 16;
+      document.documentElement.style.setProperty("--stick-offset", `${offset}px`);
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+    };
+  }, []);
+
+  const jumpTo = (id: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    e.preventDefault();
+    const header = document.querySelector(".site-header") as HTMLElement | null;
+    const sticky = stickyRef.current;
+    const offset = (header?.offsetHeight ?? 60) + (sticky?.offsetHeight ?? 0) + 16;
+    const top = target.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top, behavior: "smooth" });
+    try {
+      window.history.replaceState(null, "", `#${id}`);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const totals = useMemo(() => {
     const t: Record<Tag, number> = { buff: 0, nerf: 0, new: 0, change: 0, fix: 0 };
@@ -123,7 +159,9 @@ export default function PatchNotes() {
           <div className="value" style={{ color: "var(--nerf)" }}>
             −25%
           </div>
-          <div className="hint">7.62x54R −20 · 7.62x39 −19 · .50 −16</div>
+          <div className="hint">
+            Also <b>7.62x54R −20%</b>, <b>7.62x39 −19%</b>, <b>.50 Cal −16%</b>
+          </div>
         </div>
         <div className="stat">
           <div className="label">Logistics base pay</div>
@@ -145,7 +183,7 @@ export default function PatchNotes() {
       <OverviewCharts />
 
       {/* Filters */}
-      <div className="panel section" style={{ position: "sticky", top: 68, zIndex: 20 }}>
+      <div ref={stickyRef} className="panel section" style={{ position: "sticky", top: 68, zIndex: 20 }}>
         <div className="toolbar">
           <input className="search" placeholder="Search changes… e.g. helmet, crate, Havoc" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search changes" />
           {TAGS.map((t) => (
@@ -170,7 +208,7 @@ export default function PatchNotes() {
         </div>
         <div className="cat-nav" style={{ marginTop: 10 }}>
           {filtered.map((c) => (
-            <a key={c.id} href={`#${c.id}`}>
+            <a key={c.id} href={`#${c.id}`} onClick={jumpTo(c.id)}>
               {c.icon} {c.name} <span className="mono muted">{c.shown.length}</span>
             </a>
           ))}

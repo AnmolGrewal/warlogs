@@ -353,7 +353,7 @@ export default function ModePanel({
                     tickFormatter={(v: unknown) => `${String(v)}m`}
                     label={{ value: "Drive back to base (minutes)", position: "insideBottom", offset: -12, fill: "var(--faint)", fontSize: 12 }}
                   />
-                  <YAxis {...AXIS} tickFormatter={kfmt} width={56} label={{ value: `${unit} / hour`, angle: -90, position: "insideLeft", fill: "var(--faint)", fontSize: 12, dy: 30 }} />
+                  <YAxis {...AXIS} tickFormatter={kfmt} width={74} label={{ value: `${unit} / hour`, angle: -90, position: "insideLeft", fill: "var(--faint)", fontSize: 12, dy: 30 }} />
                   <Tooltip
                     {...TOOLTIP}
                     labelFormatter={(l: unknown) => `Drive back: ${String(l)} min`}
@@ -395,7 +395,7 @@ export default function ModePanel({
                   tickFormatter={(v: unknown) => `${String(v)}m`}
                   label={{ value: "Minutes played", position: "insideBottom", offset: -12, fill: "var(--faint)", fontSize: 12 }}
                 />
-                <YAxis {...AXIS} tickFormatter={kfmt} width={56} label={{ value: `Total ${unit}`, angle: -90, position: "insideLeft", fill: "var(--faint)", fontSize: 12, dy: 30 }} />
+                <YAxis {...AXIS} tickFormatter={kfmt} width={74} label={{ value: `Total ${unit}`, angle: -90, position: "insideLeft", fill: "var(--faint)", fontSize: 12, dy: 30 }} />
                 <Tooltip {...TOOLTIP} labelFormatter={(l: unknown) => `${String(l)} min`} formatter={(v: unknown, name: unknown) => [fmt(Number(v), metric), String(name)]} />
                 <Legend wrapperStyle={{ fontSize: 13 }} verticalAlign="top" height={28} />
                 <Line type="stepAfter" dataKey="s1" name="Season 1" stroke="var(--s1)" strokeWidth={2.5} dot={false} />
@@ -418,7 +418,7 @@ export default function ModePanel({
               <BarChart data={calc.perRun} margin={{ top: 8, right: 18, bottom: 22, left: 4 }} barGap={2}>
                 <CartesianGrid {...GRID} />
                 <XAxis dataKey="run" {...AXIS} label={{ value: "Run number", position: "insideBottom", offset: -12, fill: "var(--faint)", fontSize: 12 }} />
-                <YAxis {...AXIS} tickFormatter={kfmt} width={56} label={{ value: `${unit} per run`, angle: -90, position: "insideLeft", fill: "var(--faint)", fontSize: 12, dy: 30 }} />
+                <YAxis {...AXIS} tickFormatter={kfmt} width={74} label={{ value: `${unit} per run`, angle: -90, position: "insideLeft", fill: "var(--faint)", fontSize: 12, dy: 30 }} />
                 <Tooltip {...TOOLTIP} labelFormatter={(l: unknown) => `Run ${String(l)}`} formatter={(v: unknown, name: unknown) => [fmt(Number(v), metric), String(name)]} />
                 <Legend wrapperStyle={{ fontSize: 13 }} verticalAlign="top" height={28} />
                 <Bar dataKey="s1" name="Season 1" fill="var(--s1)" radius={[3, 3, 0, 0]} />

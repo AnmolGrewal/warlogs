@@ -113,7 +113,8 @@ h1, h2, h3, h4 { font-family: var(--font-head); letter-spacing: 0.02em; margin: 
 .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
 .stat .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
 .stat .value { font-family: var(--font-mono); font-size: 26px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
-.stat .hint { color: var(--faint); font-size: 12px; margin-top: 2px; }
+.stat .hint { color: var(--muted); font-size: 13px; line-height: 1.45; margin-top: 4px; }
+.stat .hint b { color: var(--text); font-weight: 600; font-family: var(--font-mono); }
 .stat.accent { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 .stat.accent .value { color: var(--accent); }
 @media (max-width: 520px) { .stat .value { font-size: 21px; } }
@@ -158,7 +159,7 @@ h1, h2, h3, h4 { font-family: var(--font-head); letter-spacing: 0.02em; margin: 
 }
 .cat-nav a:hover { color: var(--text); border-color: var(--border-strong); text-decoration: none; }
 
-.cat { scroll-margin-top: 80px; }
+.cat { scroll-margin-top: var(--stick-offset, 240px); }
 .cat-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
 .cat-icon { font-size: 22px; width: 40px; height: 40px; display: grid; place-items: center; background: var(--surface-2); border-radius: 8px; flex: 0 0 auto; }
 .cat-head h2 { font-size: 22px; text-transform: uppercase; font-weight: 700; }

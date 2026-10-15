@@ -56,12 +56,12 @@ export default function OverviewCharts() {
         </div>
         <div className="chart-box">
           <ResponsiveContainer>
-            <LineChart data={XP_CURVE} margin={{ top: 8, right: 16, bottom: 18, left: 4 }}>
+            <LineChart data={XP_CURVE} margin={{ top: 8, right: 16, bottom: 24, left: 4 }}>
               <CartesianGrid {...GRID} />
-              <XAxis dataKey="level" {...AXIS} label={{ value: "Role level", position: "insideBottom", offset: -10, fill: "var(--faint)", fontSize: 12 }} />
+              <XAxis dataKey="level" {...AXIS} label={{ value: "Role level", position: "insideBottom", offset: -14, fill: "var(--faint)", fontSize: 12 }} />
               <YAxis {...AXIS} tickFormatter={kfmt} width={52} />
               <Tooltip {...TOOLTIP} labelFormatter={(l) => `Level ${l}`} formatter={(v: unknown) => Number(v).toLocaleString("en-US") + " XP"} />
-              <Legend wrapperStyle={{ fontSize: 13 }} />
+              <Legend verticalAlign="top" height={30} wrapperStyle={{ fontSize: 13 }} />
               <Line type="monotone" dataKey="s1" name="Season 1" stroke="var(--s1)" strokeWidth={2.5} dot={{ r: 3 }} />
               <Line type="monotone" dataKey="s2" name="Season 2" stroke="var(--s2)" strokeWidth={2.5} dot={{ r: 3 }} />
             </LineChart>
@@ -83,7 +83,7 @@ export default function OverviewCharts() {
               <XAxis type="number" {...AXIS} allowDecimals={false} />
               <YAxis type="category" dataKey="name" {...AXIS} width={110} interval={0} />
               <Tooltip {...TOOLTIP} labelFormatter={(_, p) => (p?.[0]?.payload?.full as string) ?? ""} />
-              <Legend wrapperStyle={{ fontSize: 13 }} />
+              <Legend verticalAlign="top" height={30} wrapperStyle={{ fontSize: 13 }} />
               <Bar dataKey="buff" name="Buff" stackId="a" fill="var(--buff)" />
               <Bar dataKey="nerf" name="Nerf" stackId="a" fill="var(--nerf)" />
               <Bar dataKey="new" name="New" stackId="a" fill="var(--new)" radius={[0, 3, 3, 0]} />
