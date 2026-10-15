@@ -70,11 +70,13 @@ Season 2 streaks: crates **+$50 / +25 XP** per crate in a row (cap 10), pallets 
 
 **Assumptions** (all changeable in the page under *Assumptions & costs*):
 
-- The streak bonus starts on the 2nd item in a row (switchable to "from the 1st").
+- Streak level = deliveries in a row: the 1st is level 1, the 10th is level 10 (max; passengers max at 25). Switchable to the stricter "from the 2nd" reading.
 - Helicopters don't get the return-trip reward — the notes only list it for ground vehicles.
 - Respawning at base breaks your delivery streaks.
 - Ground-vehicle passenger XP is the same as the regular one (the notes only restate the cash).
 - Crates are full (rewards scale with supplies inside).
+- Perfect runs, no losses. Truck and crate prices aren't in the notes: defaults are a $5,000 truck, $200 small / $400 large crate, $400 pallet. Round trips buy the truck once; drop-and-respawn buys a new one every run.
+- Default timings: helicopter 4 min round trip, driving 4.5 min each way (9 min round trip), 1 min respawn, 90-minute match.
 - Streaks carry over between runs as long as you keep going.
 
 Source: [WARDOGS | Season 02 Patch Notes](https://store.steampowered.com/news/app/1867240/view/670630562731396445), 14 Oct 2026. Fan-made, not affiliated with BULKHEAD or Team17.

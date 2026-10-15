@@ -32,8 +32,8 @@ const MODE_LABEL: Record<Mode, string> = {
 };
 
 export default function StackingTable({ inputs, metric, setMetric }: { inputs: Record<Mode, Inputs>; metric: Metric; setMetric: (m: Metric) => void }) {
-  const [rule, setRule] = useState<StreakRule>("afterFirst");
-  const ladder = Array.from({ length: 26 }, (_, i) => i + 1);
+  const [rule, setRule] = useState<StreakRule>("fromFirst");
+  const ladder = Array.from({ length: rule === "afterFirst" ? 26 : 25 }, (_, i) => i + 1);
   const stepsFor = (k: number, cap: number) => Math.max(0, Math.min(rule === "afterFirst" ? k - 1 : k, cap));
 
   return (
@@ -186,8 +186,8 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
             value={rule}
             onChange={setRule}
             options={[
+              { value: "fromFirst", label: "Level = count" },
               { value: "afterFirst", label: "From 2nd" },
-              { value: "fromFirst", label: "From 1st" },
             ]}
           />
         </div>
@@ -204,24 +204,31 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
             </thead>
             <tbody>
               {ladder.map((k) => {
-                const c = stepsFor(k, ST.crate.cap);
-                const p = stepsFor(k, ST.pallet.cap);
-                const pl = stepsFor(k, ST.player.cap);
-                const r = stepsFor(k, ST.returnTrip.cap);
+                // once a counter has hit its cap, later rows just say "max"
+                const cell = (cap: number, def: { cash: number; xp: number }) => {
+                  const st = stepsFor(k, cap);
+                  const capped = stepsFor(k - 1, cap) === cap;
+                  if (capped) return <td className="n muted">max</td>;
+                  return (
+                    <td className={`n ${st === cap ? "s2c" : ""}`}>
+                      +{fmtCash(st * def.cash)} · {st * def.xp} XP
+                    </td>
+                  );
+                };
                 return (
                   <tr key={k}>
                     <td className="n">#{k}</td>
-                    <td className={`n ${c === ST.crate.cap ? "s2c" : ""}`}>+{fmtCash(c * ST.crate.cash)} · {c * ST.crate.xp} XP</td>
-                    <td className={`n ${p === ST.pallet.cap ? "s2c" : ""}`}>+{fmtCash(p * ST.pallet.cash)} · {p * ST.pallet.xp} XP</td>
-                    <td className={`n ${pl === ST.player.cap ? "s2c" : ""}`}>+{fmtCash(pl * ST.player.cash)} · {pl * ST.player.xp} XP</td>
-                    <td className={`n ${r === ST.returnTrip.cap ? "s2c" : ""}`}>+{fmtCash(r * ST.returnTrip.cash)} · {r * ST.returnTrip.xp} XP</td>
+                    {cell(ST.crate.cap, ST.crate)}
+                    {cell(ST.pallet.cap, ST.pallet)}
+                    {cell(ST.player.cap, ST.player)}
+                    {cell(ST.returnTrip.cap, ST.returnTrip)}
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
-        <p className="sub" style={{ marginTop: 8 }}>Highlighted = capped. Streak caps: crates & pallets & return trips at 10, passengers at 25.</p>
+        <p className="sub" style={{ marginTop: 8 }}>Highlighted = top level. Crates, pallets and return trips max out at level 10; passengers at 25.</p>
       </div>
 
       {/* 4. All roles compared */}

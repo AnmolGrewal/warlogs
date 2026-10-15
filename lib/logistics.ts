@@ -11,8 +11,8 @@ export type Mode = "heli" | "driver" | "heliPeople" | "driverPeople";
 export type Metric = "xp" | "cash";
 export type Strategy = "driveBack" | "respawn";
 /** How "+$50 per crate in a row, up to 10" is read.
- *  afterFirst: 1st crate = no bonus, 2nd = +1 step … 11th+ = +10 steps
- *  fromFirst:  1st crate = +1 step … 10th+ = +10 steps */
+ *  fromFirst (default): streak level = number in a row. 1st = level 1 (+$50) … 10th+ = level 10 (+$500, max)
+ *  afterFirst: 1st = no bonus, 2nd = level 1 … 11th+ = level 10 */
 export type StreakRule = "afterFirst" | "fromFirst";
 
 export interface Reward {
@@ -93,43 +93,34 @@ export interface Inputs {
   heliReturnTrip: boolean; // does a helicopter get the return-trip reward? (not in notes)
   deathResetsStreaks: boolean; // does respawning break your delivery streak?
   streakRule: StreakRule;
-  // money
-  spendPerRun: number; // crates, supplies etc.
-  respawnSpend: number; // extra cost when you abandon the vehicle (new vehicle)
+  // money (purchase prices are NOT in the patch notes — editable assumptions)
+  vehicleCost: number; // bought once for round trips; bought again every run if you respawn (you abandon it)
+  smallCost: number; // price per small crate, bought every run
+  largeCost: number; // price per large crate
+  palletCost: number; // price per pallet
   // session
   sessionMin: number;
 }
 
+const BASE: Inputs = {
+  toZone: 4.5, back: 4.5, roundTrip: 4, load: 0, respawn: 1,
+  small: 0, large: 0, pallets: 0, passengers: 0,
+  strategy: "driveBack", heliReturnTrip: false, deathResetsStreaks: true, streakRule: "fromFirst",
+  vehicleCost: 0, smallCost: 200, largeCost: 400, palletCost: 400,
+  sessionMin: 90,
+};
+
 export const DEFAULTS: Record<Mode, Inputs> = {
-  heli: {
-    toZone: 2.5, back: 2.5, roundTrip: 5, load: 0, respawn: 1,
-    small: 2, large: 0, pallets: 0, passengers: 0,
-    strategy: "driveBack", heliReturnTrip: false, deathResetsStreaks: true, streakRule: "afterFirst",
-    spendPerRun: 0, respawnSpend: 0, sessionMin: 60,
-  },
-  driver: {
-    toZone: 5, back: 5, roundTrip: 10, load: 0, respawn: 1,
-    small: 2, large: 0, pallets: 0, passengers: 0,
-    strategy: "driveBack", heliReturnTrip: false, deathResetsStreaks: true, streakRule: "afterFirst",
-    spendPerRun: 0, respawnSpend: 0, sessionMin: 60,
-  },
-  heliPeople: {
-    toZone: 2.5, back: 2.5, roundTrip: 5, load: 0, respawn: 1,
-    small: 0, large: 0, pallets: 0, passengers: 6,
-    strategy: "driveBack", heliReturnTrip: false, deathResetsStreaks: true, streakRule: "afterFirst",
-    spendPerRun: 0, respawnSpend: 0, sessionMin: 60,
-  },
-  driverPeople: {
-    toZone: 5, back: 5, roundTrip: 10, load: 0, respawn: 1,
-    small: 0, large: 0, pallets: 0, passengers: 6,
-    strategy: "driveBack", heliReturnTrip: false, deathResetsStreaks: true, streakRule: "afterFirst",
-    spendPerRun: 0, respawnSpend: 0, sessionMin: 60,
-  },
+  heli: { ...BASE, roundTrip: 4, small: 2 },
+  driver: { ...BASE, small: 2, vehicleCost: 5000 },
+  heliPeople: { ...BASE, roundTrip: 4, passengers: 6 },
+  driverPeople: { ...BASE, passengers: 6, vehicleCost: 5000 },
 };
 
 export const isAir = (m: Mode) => m === "heli" || m === "heliPeople";
 
 export interface Breakdown {
+  /** cargo bought this run + vehicle bought this run */
   crates: Reward;
   crateStreak: Reward;
   pallets: Reward;
@@ -221,7 +212,12 @@ export function simulate(
     const b: Breakdown = {
       crates: zero(), crateStreak: zero(), pallets: zero(), palletStreak: zero(),
       players: zero(), playerStreak: zero(), returnTrip: zero(), returnStreak: zero(),
-      spend: inp.spendPerRun + (!air && strategy === "respawn" ? inp.respawnSpend : 0),
+      spend:
+        inp.small * inp.smallCost +
+        inp.large * inp.largeCost +
+        inp.pallets * inp.palletCost +
+        // the vehicle: once for round trips, every run when you abandon it and respawn
+        (r === 1 || (!air && strategy === "respawn") ? inp.vehicleCost : 0),
     };
 
     // crates (small and large are separate stacks)
@@ -286,19 +282,29 @@ export function perHour(mode: Mode, inp: Inputs, season: Season, metric: Metric,
   return (total / last.endMin) * 60;
 }
 
-/** Cumulative earnings at each minute of the session (step line for charts). */
-export function timeline(mode: Mode, inp: Inputs, season: Season, metric: Metric, strategy = effectiveStrategy(mode, inp)) {
-  const rt = runMinutes(mode, inp, strategy);
-  const n = Math.ceil(inp.sessionMin / rt) + 1;
+export interface Point {
+  t: number; // minutes into the match
+  v: number; // running total
+  run: number; // runs completed
+}
+
+/** Running total after each completed run, from t = 0 to the end of the session.
+ *  Cash starts at minus the first vehicle (you buy it before the first run). */
+export function series(mode: Mode, inp: Inputs, season: Season, metric: Metric, strategy = effectiveStrategy(mode, inp)): Point[] {
+  const n = runsInSession(mode, inp, strategy);
   const rows = simulate(mode, inp, season, n, strategy);
-  const pts: number[] = [];
-  for (let m = 0; m <= inp.sessionMin; m++) {
-    // completed runs by minute m
-    const done = Math.floor(m / rt + 1e-9);
-    const row = done > 0 ? rows[Math.min(done, rows.length) - 1] : null;
-    pts.push(row ? (metric === "xp" ? row.cumXp : row.cumCash) : 0);
-  }
+  const pts: Point[] = [{ t: 0, v: metric === "cash" ? -inp.vehicleCost : 0, run: 0 }];
+  rows.forEach((r) => pts.push({ t: Math.round(r.endMin * 100) / 100, v: metric === "xp" ? r.cumXp : r.cumCash, run: r.run }));
   return pts;
+}
+
+/** Gross (before any spend) over the session. */
+export function grossTotal(mode: Mode, inp: Inputs, season: Season, strategy = effectiveStrategy(mode, inp)) {
+  const n = runsInSession(mode, inp, strategy);
+  const rows = simulate(mode, inp, season, n, strategy);
+  const spend = rows.reduce((a, r) => a + r.b.spend, 0);
+  const last = rows[rows.length - 1];
+  return { runs: n, gross: last.cumCash + spend, spend, net: last.cumCash, xp: last.cumXp, endMin: last.endMin };
 }
 
 export interface BreakEven {
@@ -382,7 +388,10 @@ export const fmtCash = (n: number) => (n < 0 ? "-$" : "$") + Math.abs(Math.round
 export const fmtXp = (n: number) => Math.round(n).toLocaleString("en-US") + " XP";
 export const fmt = (n: number, m: Metric) => (m === "xp" ? fmtXp(n) : fmtCash(n));
 export const fmtMin = (min: number) => {
-  if (min < 60) return `${Math.round(min)} min`;
+  if (min < 60) {
+    const r = Math.round(min * 10) / 10;
+    return `${Number.isInteger(r) ? r : r.toFixed(1)} min`;
+  }
   const h = Math.floor(min / 60);
   const m = Math.round(min % 60);
   return m ? `${h}h ${m}m` : `${h}h`;

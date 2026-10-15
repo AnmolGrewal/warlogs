@@ -31,7 +31,7 @@ import {
   runMinutes,
   runsInSession,
   simulate,
-  timeline,
+  series,
   type Inputs,
   type Metric,
   type Mode,
@@ -39,6 +39,7 @@ import {
 } from "@/lib/logistics";
 import { AXIS, GRID, TOOLTIP, kfmt } from "@/components/charts/chartTheme";
 import { Check, NumberField, Segmented } from "./Controls";
+import StrategyChart from "./StrategyChart";
 
 const TITLES: Record<Mode, { title: string; what: string }> = {
   heli: { title: "Helicopter supply runs", what: "Fly crates to the zone and fly back. Crates dropped from the air pay a bit less XP than from the ground." },
@@ -73,9 +74,9 @@ export default function ModePanel({
     const s2h = perHour(mode, inp, "s2", metric);
     const rt = runMinutes(mode, inp);
     const n = runsInSession(mode, inp);
-    const tl1 = timeline(mode, inp, "s1", metric);
-    const tl2 = timeline(mode, inp, "s2", metric);
-    const cumData = tl1.map((v, i) => ({ min: i, s1: Math.round(v), s2: Math.round(tl2[i]) }));
+    const p1 = series(mode, inp, "s1", metric);
+    const p2 = series(mode, inp, "s2", metric);
+    const cumData = p1.map((p, i) => ({ min: p.t, s1: Math.round(p.v), s2: Math.round(p2[i].v) }));
     const nBars = Math.min(20, Math.max(10, n));
     const r1 = simulate(mode, inp, "s1", nBars);
     const r2 = simulate(mode, inp, "s2", nBars);
@@ -201,12 +202,12 @@ export default function ModePanel({
                 value={inp.streakRule}
                 onChange={(v) => set({ streakRule: v })}
                 options={[
+                  { value: "fromFirst", label: "Level = count" },
                   { value: "afterFirst", label: "From 2nd item" },
-                  { value: "fromFirst", label: "From 1st item" },
                 ]}
               />
               <small className="muted" style={{ fontSize: 12 }}>
-                Notes don’t say whether the first delivery already gets +1 step. Default: bonus starts on the 2nd in a row.
+                Default: the 1st delivery in a row is level 1, the 10th is level 10 (max; 25 for passengers). “From 2nd item” is the stricter reading.
               </small>
             </div>
             {air ? (
@@ -218,12 +219,23 @@ export default function ModePanel({
                 <Check checked={inp.deathResetsStreaks} onChange={(v) => set({ deathResetsStreaks: v })} hint="Very likely — abandoning the vehicle should break the streak.">
                   Respawning resets delivery streaks
                 </Check>
-                <NumberField label="Extra cost when respawning" hint="new vehicle" unit="$" step={100} value={inp.respawnSpend} onChange={(v) => set({ respawnSpend: v })} />
               </>
             )}
-            <NumberField label="Spend per run" hint="crates, supplies" unit="$" step={50} value={inp.spendPerRun} onChange={(v) => set({ spendPerRun: v })} />
+            <NumberField
+              label={air ? "Helicopter cost" : "Truck cost"}
+              hint={air ? "bought once" : "once, or every run if you respawn"}
+              unit="$"
+              step={250}
+              value={inp.vehicleCost}
+              onChange={(v) => set({ vehicleCost: v })}
+            />
+            <div className="field-row">
+              <NumberField label="Small crate price" unit="$" step={50} value={inp.smallCost} onChange={(v) => set({ smallCost: v })} />
+              <NumberField label="Large crate price" unit="$" step={50} value={inp.largeCost} onChange={(v) => set({ largeCost: v })} />
+            </div>
+            {!people && <NumberField label="Pallet price" unit="$" step={50} value={inp.palletCost} onChange={(v) => set({ palletCost: v })} />}
             <small className="muted" style={{ fontSize: 12 }}>
-              Costs only affect the cash view. Crate rewards also scale with how full a crate is — these numbers assume full crates.
+              Prices aren’t in the patch notes — set them to what you pay. Costs only affect cash. Rewards assume full crates.
             </small>
           </div>
         </details>
@@ -294,6 +306,8 @@ export default function ModePanel({
             </>
           )}
         </div>
+
+        {!air && <StrategyChart mode={mode} inp={inp} />}
 
         {/* Break-even (ground only) */}
         {!air && be && (
@@ -379,7 +393,7 @@ export default function ModePanel({
               <h3>Season 1 vs Season 2 over a session</h3>
               <p className="sub">
                 Total {metric === "xp" ? "XP" : "cash"} earned as you keep running
-                {air ? "" : strategy === "driveBack" ? " (driving back)" : " (respawning)"}. Steps = each completed run.
+                {air ? "" : strategy === "driveBack" ? " (driving back)" : " (respawning)"}. Each dot = a completed run{metric === "cash" ? "; cash starts at minus the vehicle" : ""}.
               </p>
             </div>
           </div>
@@ -398,8 +412,8 @@ export default function ModePanel({
                 <YAxis {...AXIS} tickFormatter={kfmt} width={74} label={{ value: `Total ${unit}`, angle: -90, position: "insideLeft", fill: "var(--faint)", fontSize: 12, dy: 30 }} />
                 <Tooltip {...TOOLTIP} labelFormatter={(l: unknown) => `${String(l)} min`} formatter={(v: unknown, name: unknown) => [fmt(Number(v), metric), String(name)]} />
                 <Legend wrapperStyle={{ fontSize: 13 }} verticalAlign="top" height={28} />
-                <Line type="stepAfter" dataKey="s1" name="Season 1" stroke="var(--s1)" strokeWidth={2.5} dot={false} />
-                <Line type="stepAfter" dataKey="s2" name="Season 2" stroke="var(--s2)" strokeWidth={2.5} dot={false} />
+                <Line type="linear" dataKey="s1" name="Season 1" stroke="var(--s1)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--s1)", strokeWidth: 0 }} isAnimationActive={false} />
+                <Line type="linear" dataKey="s2" name="Season 2" stroke="var(--s2)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--s2)", strokeWidth: 0 }} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>

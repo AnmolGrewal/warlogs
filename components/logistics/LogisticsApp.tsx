@@ -15,7 +15,7 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "table", label: "Stacking table", icon: "📋" },
 ];
 
-const STORAGE_KEY = "wardogs-s2-logistics-v1";
+const STORAGE_KEY = "warlogs-logistics-v2";
 
 export default function LogisticsApp() {
   const [tab, setTab] = useState<TabId>("driver");

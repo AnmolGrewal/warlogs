@@ -286,3 +286,23 @@ td.wrap { white-space: normal; min-width: 220px; }
 .foot { color: var(--faint); font-size: 12px; padding: 30px 0 40px; border-top: 1px solid var(--border); margin-top: 40px; }
 details summary { cursor: pointer; color: var(--muted); font-weight: 600; font-size: 14px; }
 details[open] summary { margin-bottom: 10px; }
+
+/* ───────── Round trip vs respawn chart ───────── */
+.strategy-headline { font-family: var(--font-head); font-weight: 800; font-size: 22px; line-height: 1.25; margin: 14px 0 12px; color: var(--accent); }
+.strategy-headline.good { color: var(--buff); }
+.strategy-headline.bad { color: var(--nerf); }
+.strategy-grid { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 16px; align-items: center; }
+.end-values { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.end-values li { display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; align-items: center; }
+.end-values .swatch { width: 22px; height: 0; border-top-width: 3px; }
+.end-values .ev-label { color: var(--muted); font-size: 13px; }
+.end-values .ev-value { grid-column: 2; font-family: var(--font-mono); font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; }
+.footnotes { margin-top: 14px; display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.footnotes p { margin: 0; }
+.footnotes b { color: var(--text); font-weight: 700; letter-spacing: 0.01em; }
+@media (max-width: 760px) {
+  .strategy-grid { grid-template-columns: 1fr; }
+  .end-values { grid-template-columns: 1fr 1fr; }
+  .end-values .ev-value { font-size: 18px; }
+  .strategy-headline { font-size: 19px; }
+}
