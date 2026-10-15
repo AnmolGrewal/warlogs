@@ -27,7 +27,10 @@ export function NumberField({
   return (
     <div className="field">
       <label htmlFor={id}>
-        {label}
+        <span>
+          {label}
+          {unit && <span className="unit-inline"> ({unit})</span>}
+        </span>
         {hint && <small>{hint}</small>}
       </label>
       <div className="num-input">
@@ -47,7 +50,6 @@ export function NumberField({
             onChange(Number.isFinite(v) ? clamp(v) : 0);
           }}
         />
-        {unit && <span className="unit">{unit}</span>}
         <button type="button" aria-label={`Increase ${label}`} onClick={() => onChange(clamp(value + step))}>
           +
         </button>

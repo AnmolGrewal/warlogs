@@ -218,19 +218,23 @@ h1, h2, h3, h4 { font-family: var(--font-head); letter-spacing: 0.02em; margin: 
 .main { display: grid; gap: 16px; min-width: 0; }
 
 .field { display: grid; gap: 4px; }
-.field label, .field .lbl { font-size: 13px; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
-.field .lbl small { color: var(--faint); font-weight: 500; }
+.field label, .field .lbl { font-size: 13px; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.field label small, .field .lbl small { color: var(--faint); font-weight: 500; font-size: 12px; text-align: right; }
+.field .unit-inline { color: var(--faint); font-weight: 500; }
+/* two fields side by side: put the hint under the label so neither gets squeezed */
+.field-row .field label { flex-direction: column; align-items: flex-start; gap: 0; }
+.field-row .field label small { text-align: left; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .num-input {
   display: flex; align-items: stretch; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden;
 }
 .num-input input {
-  flex: 1; min-width: 0; background: transparent; border: 0; color: var(--text);
-  font-family: var(--font-mono); font-size: 15px; padding: 8px 10px; -moz-appearance: textfield;
+  flex: 1; min-width: 0; width: 100%; background: transparent; border: 0; color: var(--text);
+  font-family: var(--font-mono); font-size: 15px; padding: 8px 4px; text-align: center; -moz-appearance: textfield;
 }
 .num-input input::-webkit-outer-spin-button, .num-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .num-input button {
-  background: var(--surface-3); color: var(--text); border: 0; width: 34px; font-size: 16px; cursor: pointer;
+  flex: 0 0 32px; background: var(--surface-3); color: var(--text); border: 0; width: 32px; font-size: 16px; cursor: pointer;
 }
 .num-input button:hover { background: var(--border-strong); }
 .num-input .unit { align-self: center; color: var(--faint); font-size: 12px; padding-right: 8px; }
