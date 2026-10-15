@@ -331,8 +331,12 @@ details[open] summary { margin-bottom: 10px; }
   th, td { padding: 8px 10px; }
   .chart-box { height: 240px; }
 }
-@media (max-width: 400px) {
+@media (max-width: 340px) {
   .grid-4 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .grid-4 { gap: 10px; }
+  .stat .value { font-size: 18px; }
 }
 
 /* Patch notes filter bar: sticky on desktop, normal scroll on phones */
