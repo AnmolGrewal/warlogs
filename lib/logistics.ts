@@ -12,8 +12,10 @@ export type Metric = "xp" | "cash";
 export type Strategy = "driveBack" | "respawn";
 /** How "+$50 per crate in a row, up to 10" is read.
  *  fromFirst (default): streak level = number in a row. 1st = level 1 (+$50) … 10th+ = level 10 (+$500, max)
- *  afterFirst: 1st = no bonus, 2nd = level 1 … 11th+ = level 10 */
-export type StreakRule = "afterFirst" | "fromFirst";
+ *  afterFirst: 1st = no bonus, 2nd = level 1 … 11th+ = level 10
+ *  perRun: level = runs in a row; every item in run k gets level k (max 10). Not how the notes read,
+ *          offered as an option. */
+export type StreakRule = "afterFirst" | "fromFirst" | "perRun";
 
 export interface Reward {
   cash: number;
@@ -65,8 +67,8 @@ export const RATES: Record<Season, SeasonRates> = {
     playerGround: { cash: 350, xp: 25 }, // XP not listed separately → assumed same as air
     returnTrip: { cash: 150, xp: 50 },
     streaks: {
-      crate: { cash: 50, xp: 25, cap: 10 },
-      pallet: { cash: 125, xp: 50, cap: 10 },
+      crate: { cash: 100, xp: 50, cap: 10 },
+      pallet: { cash: 250, xp: 100, cap: 10 },
       player: { cash: 25, xp: 5, cap: 25 },
       returnTrip: { cash: 50, xp: 25, cap: 10 },
     },
@@ -111,8 +113,8 @@ const BASE: Inputs = {
 };
 
 export const DEFAULTS: Record<Mode, Inputs> = {
-  heli: { ...BASE, roundTrip: 4, small: 2 },
-  driver: { ...BASE, small: 2, vehicleCost: 5000 },
+  heli: { ...BASE, roundTrip: 4, pallets: 1 },
+  driver: { ...BASE, pallets: 2, vehicleCost: 5000 },
   heliPeople: { ...BASE, roundTrip: 4, passengers: 6 },
   driverPeople: { ...BASE, passengers: 6, vehicleCost: 5000 },
 };
@@ -151,6 +153,12 @@ const zero = (): Reward => ({ cash: 0, xp: 0 });
 function steps(k: number, cap: number, rule: StreakRule): number {
   const raw = rule === "afterFirst" ? k - 1 : k;
   return Math.max(0, Math.min(raw, cap));
+}
+
+/** "perRun" rule: every item in this run gets level = runs in a row (incl. this one), capped. */
+function perRunBonus(priorRuns: number, count: number, def: StreakDef): Reward {
+  const lvl = Math.min(priorRuns + 1, def.cap);
+  return { cash: count * lvl * def.cash, xp: count * lvl * def.xp };
 }
 
 /** Add the streak bonus for `count` more items on top of an existing streak of `prior`. */
@@ -201,6 +209,7 @@ export function simulate(
   const resetEachRun = !air && strategy === "respawn" && inp.deathResetsStreaks;
 
   const st = { small: 0, large: 0, pallet: 0, player: 0, returnTrip: 0 };
+  const runsInRow = { small: 0, large: 0, pallet: 0, player: 0 }; // used by the "perRun" rule
   const rows: RunRow[] = [];
   let cumCash = 0;
   let cumXp = 0;
@@ -208,6 +217,7 @@ export function simulate(
   for (let r = 1; r <= runs; r++) {
     if (resetEachRun) {
       st.small = 0; st.large = 0; st.pallet = 0; st.player = 0; st.returnTrip = 0;
+      runsInRow.small = 0; runsInRow.large = 0; runsInRow.pallet = 0; runsInRow.player = 0;
     }
     const b: Breakdown = {
       crates: zero(), crateStreak: zero(), pallets: zero(), palletStreak: zero(),
@@ -234,13 +244,21 @@ export function simulate(
 
     if (R.streaks) {
       const S = R.streaks;
-      const sSmall = streakBonus(st.small, inp.small, S.crate, inp.streakRule);
-      const sLarge = streakBonus(st.large, inp.large, S.crate, inp.streakRule);
+      const rule = inp.streakRule;
+      const bonus = (prior: number, rowRuns: number, count: number, def: StreakDef): Reward =>
+        rule === "perRun" ? perRunBonus(rowRuns, count, def) : streakBonus(prior, count, def, rule);
+      const sSmall = bonus(st.small, runsInRow.small, inp.small, S.crate);
+      const sLarge = bonus(st.large, runsInRow.large, inp.large, S.crate);
       b.crateStreak = { cash: sSmall.cash + sLarge.cash, xp: sSmall.xp + sLarge.xp };
-      b.palletStreak = streakBonus(st.pallet, inp.pallets, S.pallet, inp.streakRule);
-      b.playerStreak = streakBonus(st.player, inp.passengers, S.player, inp.streakRule);
-      if (returnPaid) b.returnStreak = streakBonus(st.returnTrip, 1, S.returnTrip, inp.streakRule);
+      b.palletStreak = bonus(st.pallet, runsInRow.pallet, inp.pallets, S.pallet);
+      b.playerStreak = bonus(st.player, runsInRow.player, inp.passengers, S.player);
+      // one return trip per run, so every rule except "afterFirst" counts it the same way
+      if (returnPaid) b.returnStreak = streakBonus(st.returnTrip, 1, S.returnTrip, rule === "afterFirst" ? "afterFirst" : "fromFirst");
     }
+    if (inp.small) runsInRow.small++;
+    if (inp.large) runsInRow.large++;
+    if (inp.pallets) runsInRow.pallet++;
+    if (inp.passengers) runsInRow.player++;
     st.small += inp.small;
     st.large += inp.large;
     st.pallet += inp.pallets;

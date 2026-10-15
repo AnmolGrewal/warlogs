@@ -168,7 +168,7 @@ export default function PatchNotes() {
           <div className="value" style={{ color: "var(--nerf)" }}>
             ½ cash
           </div>
-          <div className="hint">but new streaks up to +$500 per crate</div>
+          <div className="hint">but new streaks up to +$1,000 per crate</div>
         </div>
         <div className="stat">
           <div className="label">Changes tracked</div>

@@ -34,6 +34,7 @@ const MODE_LABEL: Record<Mode, string> = {
 export default function StackingTable({ inputs, metric, setMetric }: { inputs: Record<Mode, Inputs>; metric: Metric; setMetric: (m: Metric) => void }) {
   const [rule, setRule] = useState<StreakRule>("fromFirst");
   const ladder = Array.from({ length: rule === "afterFirst" ? 26 : 25 }, (_, i) => i + 1);
+  const S2C = RATES.s2.streaks!;
   const stepsFor = (k: number, cap: number) => Math.max(0, Math.min(rule === "afterFirst" ? k - 1 : k, cap));
 
   return (
@@ -70,14 +71,14 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                 <td><A v="yes" /></td>
                 <td><A v="yes" /></td>
                 <td><A v="yes">Small and large separate</A></td>
-                <td className="wrap muted">+$50 / +25 XP per crate in a row, up to 10. No vehicle restriction, so both get it.</td>
+                <td className="wrap muted">{`+${fmtCash(S2C.crate.cash)} / +${S2C.crate.xp} XP per crate in a row, up to 10.`} No vehicle restriction, so helicopters get it too.</td>
               </tr>
               <tr>
                 <td>Pallet delivery + streak</td>
                 <td><A v="yes" /></td>
                 <td><A v="yes">Yes</A> <span className="muted">(more XP)</span></td>
                 <td><A v="yes">Own counter</A></td>
-                <td className="wrap muted">Pallet XP 400, or 500 from a ground vehicle. Streak +$125 / +50 XP per pallet, up to 10.</td>
+                <td className="wrap muted">{`Pallet XP 400, or 500 from a ground vehicle. Streak +${fmtCash(S2C.pallet.cash)} / +${S2C.pallet.xp} XP per pallet, up to 10.`}</td>
               </tr>
               <tr>
                 <td>Passenger delivery</td>
@@ -105,7 +106,7 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                 <td><A v="maybe">Only if the above applies</A></td>
                 <td><A v="yes" /></td>
                 <td><A v="yes">Own counter</A></td>
-                <td className="wrap muted">+$50 / +25 XP per trip in a row, up to 10. Drivers run this <b>and</b> the delivery streaks at the same time.</td>
+                <td className="wrap muted">{`+${fmtCash(S2C.returnTrip.cash)} / +${S2C.returnTrip.xp} XP per trip in a row, up to 10.`} Drivers run this <b>and</b> the delivery streaks at the same time.</td>
               </tr>
               <tr>
                 <td>Respawn at base instead of driving back</td>
@@ -186,7 +187,7 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
             value={rule}
             onChange={setRule}
             options={[
-              { value: "fromFirst", label: "Level = count" },
+              { value: "fromFirst", label: "Per item" },
               { value: "afterFirst", label: "From 2nd" },
             ]}
           />
