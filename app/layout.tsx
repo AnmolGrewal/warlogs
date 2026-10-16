@@ -31,6 +31,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <NavLinks />
           </div>
         </header>
+        <div className="hotfix-banner" role="status">
+          <div className="container">
+            <span className="hotfix-tag">Hotfix</span>
+            <strong>Legitimate Logistic Streak Nerf 75% stealth hotfix added</strong>
+            <span className="hotfix-detail">Supply pallet streak now +25 XP / +$150 per level (was +100 XP / +$250), helicopter and driver. Base pay unchanged.</span>
+          </div>
+        </div>
         <main className="container">{children}</main>
         <footer className="container foot">
           Fan-made, not affiliated with BULKHEAD or Team17. Numbers from the official{" "}

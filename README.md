@@ -66,7 +66,7 @@ Numbers come straight from the Season 02 patch notes:
 | Player delivered | $150 / 50 XP (ground $500) | $100 / 25 XP (ground $350) |
 | Return trip (ground) | $250 / 100 XP | $150 / 50 XP |
 
-Season 2 streaks: crates **+$100 / +50 XP** per crate in a row (cap 10), pallets **+$250 / +100 XP** (cap 10), players **+$25 / +5 XP** (cap 25), return trips **+$50 / +25 XP** (cap 10). Small and large crates keep separate streak counters.
+Season 2 streaks: crates **+$100 / +50 XP** per crate in a row (cap 10), pallets **+$150 / +25 XP** (cap 10, after the stealth hotfix; was +$250 / +100 XP), players **+$25 / +5 XP** (cap 25), return trips **+$50 / +25 XP** (cap 10). Small and large crates keep separate streak counters.
 
 **Assumptions** (all changeable in the page under *Assumptions & costs*):
 

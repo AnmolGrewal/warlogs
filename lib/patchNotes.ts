@@ -219,7 +219,8 @@ export const CATEGORIES: Category[] = [
     blurb: "Lower base pay, but new delivery streaks reward staying in the vehicle. Try the calculator →",
     notes: [
       { t: "NEW crate streak: +$100 / +50 XP per crate in a row, up to 10", tag: "new", why: "Small and large crates stack separately." },
-      { t: "NEW pallet streak: +$250 / +100 XP per pallet in a row, up to 10", tag: "new" },
+      { t: "NEW pallet streak: +$150 / +25 XP per pallet in a row, up to 10", tag: "new", why: "After the stealth hotfix (was +$250 / +100 XP)." },
+      { t: "Stealth hotfix: pallet streak XP per level", from: 100, to: 25, unit: "XP", tag: "nerf", why: "Cash per level +$250 → +$150 (−40%). Helicopter and driver alike; base pallet pay unchanged." },
       { t: "NEW passenger streak: +$25 / +5 XP per player in a row, up to 25", tag: "new" },
       { t: "NEW return-trip streak: +$50 / +25 XP per trip in a row, up to 10", tag: "new", why: "This is what makes driving back worth it." },
       { t: "Deploy small crate (cash)", from: 500, to: 250, unit: "$", tag: "nerf" },

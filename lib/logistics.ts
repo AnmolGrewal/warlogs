@@ -68,7 +68,7 @@ export const RATES: Record<Season, SeasonRates> = {
     returnTrip: { cash: 150, xp: 50 },
     streaks: {
       crate: { cash: 100, xp: 50, cap: 10 },
-      pallet: { cash: 250, xp: 100, cap: 10 },
+      pallet: { cash: 150, xp: 25, cap: 10 }, // stealth hotfix: was +$250 / +100 XP per level
       player: { cash: 25, xp: 5, cap: 25 },
       returnTrip: { cash: 50, xp: 25, cap: 10 },
     },

@@ -350,3 +350,20 @@ details[open] summary { margin-bottom: 10px; }
 /* Patch notes filter bar: sticky on desktop, normal scroll on phones */
 .filter-bar { position: sticky; top: 68px; z-index: 20; }
 @media (max-width: 640px) { .filter-bar { position: static; } }
+
+/* ───────── Hotfix banner ───────── */
+.hotfix-banner {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--nerf) 28%, var(--bg)), color-mix(in srgb, var(--nerf) 12%, var(--bg)));
+  border-bottom: 1px solid color-mix(in srgb, var(--nerf) 55%, transparent);
+}
+.hotfix-banner .container { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding-top: 14px; padding-bottom: 14px; }
+.hotfix-banner strong {
+  font-family: var(--font-head); font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
+  font-size: clamp(18px, 2.6vw, 26px); line-height: 1.15; color: #fff;
+}
+.hotfix-tag {
+  background: var(--nerf); color: #1a0505; font-weight: 800; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px;
+}
+.hotfix-detail { flex-basis: 100%; color: color-mix(in srgb, #fff 78%, var(--nerf)); font-size: 14px; }
+@media (max-width: 640px) { .hotfix-detail { font-size: 13px; } }
