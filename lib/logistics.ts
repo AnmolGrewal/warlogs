@@ -10,11 +10,13 @@ export type Season = "s1" | "s2";
 export type Mode = "heli" | "driver" | "heliPeople" | "driverPeople";
 export type Metric = "xp" | "cash";
 export type Strategy = "driveBack" | "respawn";
-/** How "+$X per crate in a row, up to 10" is counted.
- *  perRun (default): the level goes up once per run. Run 1 = base only (+0), run 2 = +1 …
- *          run 11+ = +10 (max; passengers +25 from run 26). Every item in a run gets that run's level.
- *  fromFirst: every item is its own level — 1st item in a row = +1 … 10th+ = +10
- *  afterFirst: like fromFirst, but the 1st item gets +0 (2nd = +1 … 11th+ = +10) */
+/** How "+$X per pallet in a row, up to 10" is counted.
+ *  afterFirst (default): every item is its own level and the 1st item in a row is +0.
+ *          Truck with 2 pallets: run 1 = +0,+1 · run 2 = +2,+3 · … · run 6 = +10,+10 (max from run 6).
+ *          Helicopter with 1 pallet: run 1 = +0 … run 11 = +10 (max from run 11).
+ *          Return trips: 1st = +0, 2nd = +1 … 11th = +10.
+ *  fromFirst: like afterFirst, but the 1st item is already +1
+ *  perRun: the level goes up once per run (run 1 = +0, run 11 = +10); every item in a run shares it */
 export type StreakRule = "afterFirst" | "fromFirst" | "perRun";
 
 export interface Reward {
@@ -110,7 +112,7 @@ export interface Inputs {
 const BASE: Inputs = {
   toZone: 4.5, back: 4.5, roundTrip: 4, load: 0, respawn: 1,
   small: 0, large: 0, pallets: 0, passengers: 0,
-  strategy: "driveBack", heliReturnTrip: false, deathResetsStreaks: true, streakRule: "perRun",
+  strategy: "driveBack", heliReturnTrip: false, deathResetsStreaks: true, streakRule: "afterFirst",
   vehicleCost: 0, smallCost: 200, largeCost: 400, palletCost: 400,
   fobDeposit: true, fobAmount: 1800,
   sessionMin: 90,
@@ -149,6 +151,8 @@ export interface RunRow {
   cumCash: number;
   cumXp: number;
   streak: { small: number; large: number; pallet: number; player: number; returnTrip: number };
+  /** Streak level each item got this run (Season 2 only; empty in Season 1). */
+  lv: { small: number[]; large: number[]; pallet: number[]; player: number[]; ret: number | null };
   b: Breakdown;
 }
 
@@ -225,6 +229,7 @@ export function simulate(
       st.small = 0; st.large = 0; st.pallet = 0; st.player = 0; st.returnTrip = 0;
       runsInRow.small = 0; runsInRow.large = 0; runsInRow.pallet = 0; runsInRow.player = 0;
     }
+    const lv: RunRow["lv"] = { small: [], large: [], pallet: [], player: [], ret: null };
     const b: Breakdown = {
       crates: zero(), crateStreak: zero(), pallets: zero(), palletStreak: zero(),
       players: zero(), playerStreak: zero(), returnTrip: zero(), returnStreak: zero(), fob: zero(),
@@ -257,6 +262,13 @@ export function simulate(
       const sLarge = bonus(st.large, runsInRow.large, inp.large, S.crate);
       b.crateStreak = { cash: sSmall.cash + sLarge.cash, xp: sSmall.xp + sLarge.xp };
       b.palletStreak = bonus(st.pallet, runsInRow.pallet, inp.pallets, S.pallet);
+      const levelsFor = (prior: number, rowRuns: number, count: number, cap: number) =>
+        Array.from({ length: count }, (_, i) => (rule === "perRun" ? Math.min(rowRuns, cap) : steps(prior + i + 1, cap, rule)));
+      lv.small = levelsFor(st.small, runsInRow.small, inp.small, S.crate.cap);
+      lv.large = levelsFor(st.large, runsInRow.large, inp.large, S.crate.cap);
+      lv.pallet = levelsFor(st.pallet, runsInRow.pallet, inp.pallets, S.pallet.cap);
+      lv.player = levelsFor(st.player, runsInRow.player, inp.passengers, S.player.cap);
+      if (returnPaid) lv.ret = steps(st.returnTrip + 1, S.returnTrip.cap, rule === "fromFirst" ? "fromFirst" : "afterFirst");
       b.playerStreak = bonus(st.player, runsInRow.player, inp.passengers, S.player);
       // one return trip per run: first return trip pays base only, the next is +1 (except under "fromFirst")
       if (returnPaid) b.returnStreak = streakBonus(st.returnTrip, 1, S.returnTrip, rule === "fromFirst" ? "fromFirst" : "afterFirst");
@@ -289,10 +301,64 @@ export function simulate(
       cumCash,
       cumXp,
       streak: { ...st },
+      lv,
       b,
     });
   }
   return rows;
+}
+
+/** First Season 2 run where every streak has hit its cap (pay per run stops growing). null if it never grows. */
+export function streakMaxRun(mode: Mode, inp: Inputs, strategy = effectiveStrategy(mode, inp)): number | null {
+  const rows = simulate(mode, inp, "s2", 60, strategy);
+  const steady = rows[rows.length - 1].xp;
+  if (rows[0].xp === steady) return null;
+  const i = rows.findIndex((r, k) => rows.slice(k).every((x) => x.xp === steady));
+  return i < 0 ? null : i + 1;
+}
+
+export interface MaxRuns {
+  pallet: number | null;
+  small: number | null;
+  large: number | null;
+  player: number | null;
+  ret: number | null;
+  all: number | null;
+}
+
+/** For each streak counter, the first Season 2 run where every item in that run is at the cap. */
+export function streakMaxRuns(mode: Mode, inp: Inputs, strategy = effectiveStrategy(mode, inp)): MaxRuns {
+  const S = RATES.s2.streaks!;
+  const rows = simulate(mode, inp, "s2", 60, strategy);
+  const first = (pick: (r: RunRow) => number[], cap: number) => {
+    const i = rows.findIndex((r) => pick(r).length > 0 && pick(r).every((l) => l >= cap));
+    return i < 0 ? null : i + 1;
+  };
+  return {
+    pallet: first((r) => r.lv.pallet, S.pallet.cap),
+    small: first((r) => r.lv.small, S.crate.cap),
+    large: first((r) => r.lv.large, S.crate.cap),
+    player: first((r) => r.lv.player, S.player.cap),
+    ret: first((r) => (r.lv.ret == null ? [] : [r.lv.ret]), S.returnTrip.cap),
+    all: streakMaxRun(mode, inp, strategy),
+  };
+}
+
+/** Short text of the streak levels one run got, e.g. "Pallets +0, +1 · Return +0". */
+export function levelText(r: RunRow): string {
+  const S = RATES.s2.streaks!;
+  const list = (a: number[], cap: number) => {
+    if (a.every((l) => l >= cap)) return `+${cap} (max)`;
+    if (a.length > 3) return `+${a[0]}–${a[a.length - 1] >= cap ? "max" : "+" + a[a.length - 1]}`;
+    return a.map((l) => (l >= cap ? "max" : `+${l}`)).join(", ");
+  };
+  const parts: string[] = [];
+  if (r.lv.pallet.length) parts.push(`Pallets ${list(r.lv.pallet, S.pallet.cap)}`);
+  if (r.lv.small.length) parts.push(`Small ${list(r.lv.small, S.crate.cap)}`);
+  if (r.lv.large.length) parts.push(`Large ${list(r.lv.large, S.crate.cap)}`);
+  if (r.lv.player.length) parts.push(`Players ${list(r.lv.player, S.player.cap)}`);
+  if (r.lv.ret != null) parts.push(`Return ${r.lv.ret >= S.returnTrip.cap ? `+${S.returnTrip.cap} (max)` : "+" + r.lv.ret}`);
+  return parts.join(" · ") || "—";
 }
 
 /** Whole runs that fit in the session (at least 1). */

@@ -8,6 +8,7 @@ import {
   fmt,
   fmtCash,
   perHour,
+  streakMaxRuns,
   type Inputs,
   type Metric,
   type Mode,
@@ -32,7 +33,7 @@ const MODE_LABEL: Record<Mode, string> = {
 };
 
 export default function StackingTable({ inputs, metric, setMetric }: { inputs: Record<Mode, Inputs>; metric: Metric; setMetric: (m: Metric) => void }) {
-  const [rule, setRule] = usePersistentState<StreakRule>("warlogs-ladder-rule-v2", "perRun", oneOf<StreakRule>("fromFirst", "afterFirst", "perRun"));
+  const [rule, setRule] = usePersistentState<StreakRule>("warlogs-ladder-rule-v3", "afterFirst", oneOf<StreakRule>("fromFirst", "afterFirst", "perRun"));
   const ladder = Array.from({ length: rule === "fromFirst" ? 25 : 26 }, (_, i) => i + 1);
   const S2C = RATES.s2.streaks!;
   const stepsFor = (k: number, cap: number) => Math.max(0, Math.min(rule === "fromFirst" ? k : k - 1, cap));
@@ -190,16 +191,16 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
         <div className="panel-head">
           <div>
             <h3>Streak ladder</h3>
-            <p className="sub">{rule === "perRun" ? "Bonus on each item in the Nth run in a row. Run 1 is base only; each later run adds one level." : "Bonus added to the Nth item in a row."} Each counter (small, large, pallet, passengers, return) climbs on its own.</p>
+            <p className="sub">{rule === "perRun" ? "Bonus on each item in the Nth run in a row. Run 1 is base only; each later run adds one level." : rule === "afterFirst" ? "Bonus on the Nth item in a row; the 1st is +0. A truck with 2 pallets covers items 1–2 on run 1, 3–4 on run 2, and hits +10 on run 6. A helicopter with 1 pallet hits +10 on run 11." : "Bonus on the Nth item in a row, with the 1st already +1."} Each counter (small, large, pallet, passengers, return) climbs on its own.</p>
           </div>
           <Segmented
             label="Streak rule"
             value={rule}
             onChange={setRule}
             options={[
+              { value: "afterFirst", label: "Per item" },
+              { value: "fromFirst", label: "1st +1" },
               { value: "perRun", label: "Per run" },
-              { value: "fromFirst", label: "Per item" },
-              { value: "afterFirst", label: "Item, from 2nd" },
             ]}
           />
         </div>
@@ -270,6 +271,7 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                 <th className="n">S1 / hour</th>
                 <th className="n">S2 / hour</th>
                 <th className="n">Change</th>
+                <th className="n">Streak max (S2)</th>
                 <th>Drive back vs respawn (S2)</th>
               </tr>
             </thead>
@@ -302,6 +304,7 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                       {pct >= 0 ? "+" : ""}
                       {Math.round(pct)}%
                     </td>
+                    <td className="n">{(() => { const r = streakMaxRuns(m, inp, strat); return r.all != null ? `Run ${r.all}` : "—"; })()}</td>
                     <td className="muted">
                       {air
                         ? "Always flies back"

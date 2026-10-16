@@ -26,6 +26,8 @@ import {
   fmt,
   fmtCash,
   fmtMin,
+  levelText,
+  streakMaxRuns,
   isAir,
   minutesToLevel,
   paysReturnTrip,
@@ -96,7 +98,14 @@ export default function ModePanel({
       s1: minutesToLevel(mode, inp, "s1", lvl),
       s2: minutesToLevel(mode, inp, "s2", lvl),
     }));
-    return { s1h, s2h, rt, n, cumData, perRun, tableRows, tableS1, firstWin, cross, levels };
+    const both = {
+      s2: { xp: perHour(mode, inp, "s2", "xp"), cash: perHour(mode, inp, "s2", "cash") },
+      s1: { xp: perHour(mode, inp, "s1", "xp"), cash: perHour(mode, inp, "s1", "cash") },
+    };
+    const maxRuns = streakMaxRuns(mode, inp);
+    const runS2 = simulate(mode, inp, "s2", n);
+    const runS1 = simulate(mode, inp, "s1", n);
+    return { s1h, s2h, rt, n, cumData, perRun, tableRows, tableS1, firstWin, cross, levels, both, maxRuns, runS2, runS1 };
   }, [mode, inp, metric]);
 
   const be = useMemo(() => (air ? null : breakEven(mode, inp, beSeason, metric)), [air, mode, inp, beSeason, metric]);
@@ -219,13 +228,13 @@ export default function ModePanel({
                 value={inp.streakRule}
                 onChange={(v) => set({ streakRule: v })}
                 options={[
+                  { value: "afterFirst", label: "Per item" },
+                  { value: "fromFirst", label: "Per item, 1st +1" },
                   { value: "perRun", label: "Per run" },
-                  { value: "fromFirst", label: "Per item" },
-                  { value: "afterFirst", label: "Per item, from 2nd" },
                 ]}
               />
               <small className="muted" style={{ fontSize: 12 }}>
-                <b>Per run</b> (default): run 1 pays base only, run 2 is +1, and the streak maxes at +10 on run 11 (passengers +25 on run 26). <b>Per item</b>: every crate/pallet is its own level, so 2 pallets a run max out on run 5. <b>Per item, from 2nd</b>: same, but the first item gets +0.
+                <b>Per item</b> (default): each pallet or crate is its own level and the first is +0. A truck with 2 pallets goes +0,+1 → +2,+3 → … → +10,+10 on run 6; a helicopter with 1 pallet reaches +10 on run 11. Return trips are one per run, so they max on run 11. <b>Per item, 1st +1</b>: same, but the first one already counts as +1. <b>Per run</b>: one level per run, shared by every item.
               </small>
             </div>
             {air ? (
@@ -277,28 +286,47 @@ export default function ModePanel({
         <div className="grid grid-4">
           <div className="stat accent">
             <div className="label">Season 2 per hour</div>
-            <div className="value">{fmt(calc.s2h, metric)}</div>
+            <div className="value">{fmt(calc.both.s2.xp, "xp")}</div>
+            <div className="value-2">{fmtCash(calc.both.s2.cash)} cash</div>
             <div className="hint">average over {fmtMin(inp.sessionMin)}</div>
           </div>
           <div className="stat">
             <div className="label">Season 1 per hour</div>
             <div className="value" style={{ color: "var(--s1)" }}>
-              {fmt(calc.s1h, metric)}
+              {fmt(calc.both.s1.xp, "xp")}
             </div>
+            <div className="value-2">{fmtCash(calc.both.s1.cash)} cash</div>
             <div className="hint">same run, old rewards</div>
           </div>
           <div className="stat">
-            <div className="label">Difference</div>
-            <div className="value" style={{ color: s2Better ? "var(--buff)" : "var(--nerf)" }}>
-              {diffPct >= 0 ? "+" : ""}
-              {Math.round(diffPct)}%
-            </div>
-            <div className="hint">{s2Better ? "Season 2 pays more" : "Season 1 paid more"}</div>
+            <div className="label">Season 2 vs Season 1</div>
+            {(["xp", "cash"] as const).map((k) => {
+              const a = calc.both.s1[k];
+              const d = a !== 0 ? ((calc.both.s2[k] - a) / Math.abs(a)) * 100 : 0;
+              return (
+                <div key={k} className={k === "xp" ? "value" : "value-2"} style={{ color: d >= 0 ? "var(--buff)" : "var(--nerf)" }}>
+                  {d >= 0 ? "+" : ""}
+                  {Math.round(d)}% {k === "xp" ? "XP" : "cash"}
+                </div>
+              );
+            })}
+            <div className="hint">per hour, same run</div>
           </div>
           <div className="stat">
-            <div className="label">Role level 20</div>
-            <div className="value">{lvl20?.s2 != null ? fmtMin(lvl20.s2) : "—"}</div>
-            <div className="hint">Season 1: {lvl20?.s1 != null ? fmtMin(lvl20.s1) : "—"} of this run</div>
+            <div className="label">Streak maxes out</div>
+            <div className="value">{calc.maxRuns.all != null ? `Run ${calc.maxRuns.all}` : "Never"}</div>
+            <div className="value-2">
+              {[
+                calc.maxRuns.pallet != null ? `Pallets: run ${calc.maxRuns.pallet}` : null,
+                calc.maxRuns.small != null ? `Small: run ${calc.maxRuns.small}` : null,
+                calc.maxRuns.large != null ? `Large: run ${calc.maxRuns.large}` : null,
+                calc.maxRuns.player != null ? `Players: run ${calc.maxRuns.player}` : null,
+                calc.maxRuns.ret != null ? `Return: run ${calc.maxRuns.ret}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "Resets every run"}
+            </div>
+            <div className="hint">Level 20: {lvl20?.s2 != null ? fmtMin(lvl20.s2) : "—"} (S1 {lvl20?.s1 != null ? fmtMin(lvl20.s1) : "—"})</div>
           </div>
         </div>
 
@@ -323,6 +351,104 @@ export default function ModePanel({
                 : "The streak bonuses aren’t enough to make up for the lower base pay with this cargo."}
             </>
           )}
+        </div>
+
+        {/* Run by run: XP and cash side by side */}
+        <div className="panel">
+          <div className="panel-head">
+            <div>
+              <h3>Run by run</h3>
+              <p className="sub">
+                XP and cash for every run in your {fmtMin(inp.sessionMin)} session. Streak levels are Season 2 (Season 1 has none). Cash is after truck and cargo costs, so run 1 includes buying
+                the vehicle.
+              </p>
+            </div>
+          </div>
+          <div className="table-wrap" style={{ maxHeight: 520 }}>
+            <table className="run-table">
+              <thead>
+                <tr>
+                  <th className="n">Run</th>
+                  <th>Streak levels (S2)</th>
+                  <th className="n s2c">S2 XP</th>
+                  <th className="n s2c">S2 cash</th>
+                  <th className="n s1c">S1 XP</th>
+                  <th className="n s1c">S1 cash</th>
+                  <th className="n">XP vs S1</th>
+                  <th className="n">Cash vs S1</th>
+                </tr>
+              </thead>
+              <tbody>
+                {calc.runS2.map((r, i) => {
+                  const o = calc.runS1[i];
+                  const dx = r.xp - o.xp;
+                  const dc = r.cash - o.cash;
+                  const tags: string[] = [];
+                  if (calc.maxRuns.pallet === r.run) tags.push("Pallets maxed");
+                  if (calc.maxRuns.all === r.run) tags.push("All streaks maxed");
+                  else if (calc.maxRuns.ret === r.run) tags.push("Return maxed");
+                  return (
+                    <tr key={r.run} className={tags.length ? "is-max" : undefined}>
+                      <td className="n">
+                        {r.run}
+                        <span className="muted" style={{ display: "block", fontSize: 11 }}>
+                          {fmtMin(r.endMin)}
+                        </span>
+                      </td>
+                      <td className="wrap">
+                        {levelText(r)}
+                        {tags.map((t) => (
+                          <span key={t} className="max-tag">
+                            {t}
+                          </span>
+                        ))}
+                      </td>
+                      <td className="n s2c" style={{ fontWeight: 700 }}>
+                        {Math.round(r.xp).toLocaleString("en-US")}
+                      </td>
+                      <td className="n s2c">{fmtCash(r.cash)}</td>
+                      <td className="n s1c">{Math.round(o.xp).toLocaleString("en-US")}</td>
+                      <td className="n s1c">{fmtCash(o.cash)}</td>
+                      <td className={`n ${dx >= 0 ? "yes" : "no"}`}>
+                        {dx >= 0 ? "+" : "−"}
+                        {Math.abs(Math.round(dx)).toLocaleString("en-US")}
+                      </td>
+                      <td className={`n ${dc >= 0 ? "yes" : "no"}`}>
+                        {dc >= 0 ? "+" : "−"}
+                        {fmtCash(Math.abs(dc))}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                {(() => {
+                  const a = calc.runS2[calc.runS2.length - 1];
+                  const o = calc.runS1[calc.runS1.length - 1];
+                  const dx = a.cumXp - o.cumXp;
+                  const dc = a.cumCash - o.cumCash;
+                  return (
+                    <tr>
+                      <td className="n">Total</td>
+                      <td>{calc.runS2.length} runs</td>
+                      <td className="n s2c">{Math.round(a.cumXp).toLocaleString("en-US")}</td>
+                      <td className="n s2c">{fmtCash(a.cumCash)}</td>
+                      <td className="n s1c">{Math.round(o.cumXp).toLocaleString("en-US")}</td>
+                      <td className="n s1c">{fmtCash(o.cumCash)}</td>
+                      <td className={`n ${dx >= 0 ? "yes" : "no"}`}>
+                        {dx >= 0 ? "+" : "−"}
+                        {Math.abs(Math.round(dx)).toLocaleString("en-US")}
+                      </td>
+                      <td className={`n ${dc >= 0 ? "yes" : "no"}`}>
+                        {dc >= 0 ? "+" : "−"}
+                        {fmtCash(Math.abs(dc))}
+                      </td>
+                    </tr>
+                  );
+                })()}
+              </tfoot>
+            </table>
+          </div>
         </div>
 
         {!air && <StrategyChart mode={mode} inp={inp} />}
@@ -442,7 +568,10 @@ export default function ModePanel({
           <div className="panel-head">
             <div>
               <h3>Earnings per run</h3>
-              <p className="sub">Season 1 pays the same every run. Season 2 climbs as streaks build, then flattens at the cap.</p>
+              <p className="sub">
+                Season 1 pays the same every run. Season 2 climbs as streaks build
+                {calc.maxRuns.all != null ? `, then flattens once every streak is maxed on run ${calc.maxRuns.all}` : ""}.
+              </p>
             </div>
           </div>
           <div className="chart-box">
@@ -455,6 +584,12 @@ export default function ModePanel({
                 <Legend wrapperStyle={{ fontSize: 13 }} verticalAlign="top" height={28} />
                 <Bar dataKey="s1" name="Season 1" fill="var(--s1)" radius={[3, 3, 0, 0]} />
                 <Bar dataKey="s2" name="Season 2" fill="var(--s2)" radius={[3, 3, 0, 0]} />
+                {calc.maxRuns.pallet != null && calc.maxRuns.pallet !== calc.maxRuns.all && (
+                  <ReferenceLine x={calc.maxRuns.pallet} stroke="var(--buff)" strokeDasharray="4 4" label={{ value: "Pallets max", position: "top", fill: "var(--buff)", fontSize: 11 }} />
+                )}
+                {calc.maxRuns.all != null && (
+                  <ReferenceLine x={calc.maxRuns.all} stroke="var(--buff)" label={{ value: "All max", position: "top", fill: "var(--buff)", fontSize: 11 }} />
+                )}
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -500,8 +635,8 @@ export default function ModePanel({
         </div>
 
         {/* Run-by-run breakdown */}
-        <details className="panel" open>
-          <summary>Run-by-run breakdown (Season 2, {metric === "xp" ? "XP" : "cash"})</summary>
+        <details className="panel">
+          <summary>Where each run’s pay comes from (Season 2, {metric === "xp" ? "XP" : "cash"})</summary>
           <div className="table-wrap" style={{ maxHeight: 460 }}>
             <table>
               <thead>

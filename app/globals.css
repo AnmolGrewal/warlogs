@@ -367,3 +367,15 @@ details[open] summary { margin-bottom: 10px; }
 }
 .hotfix-detail { flex-basis: 100%; color: color-mix(in srgb, #fff 78%, var(--nerf)); font-size: 14px; }
 @media (max-width: 640px) { .hotfix-detail { font-size: 13px; } }
+
+/* ───────── Run-by-run table ───────── */
+.stat .value-2 { font-family: var(--font-mono); font-size: 15px; font-weight: 700; margin-top: 2px; color: var(--text); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .stat .value-2 { font-size: 13px; } }
+.run-table td.wrap { min-width: 170px; }
+.run-table tr.is-max td { background: color-mix(in srgb, var(--buff) 9%, transparent); }
+.run-table tfoot td { background: var(--surface-2); font-weight: 700; border-top: 1px solid var(--border-strong); position: sticky; bottom: 0; }
+.max-tag {
+  display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--buff); border: 1px solid var(--buff);
+  background: color-mix(in srgb, var(--buff) 12%, transparent); vertical-align: 1px;
+}

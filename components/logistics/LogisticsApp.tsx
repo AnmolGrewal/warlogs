@@ -15,8 +15,8 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "table", label: "Stacking table", icon: "📋" },
 ];
 
-const STORAGE_KEY = "warlogs-logistics-v4";
-const OLD_STORAGE_KEY = "warlogs-logistics-v3"; // migrated once: keeps your inputs, resets the streak rule
+const STORAGE_KEY = "warlogs-logistics-v5";
+const OLD_STORAGE_KEYS = ["warlogs-logistics-v4", "warlogs-logistics-v3"]; // migrated once: keeps your inputs, resets the streak rule
 
 export default function LogisticsApp() {
   const [tab, setTab] = useState<TabId>("driver");
@@ -29,7 +29,10 @@ export default function LogisticsApp() {
       let raw = window.localStorage.getItem(STORAGE_KEY);
       let migrating = false;
       if (!raw) {
-        raw = window.localStorage.getItem(OLD_STORAGE_KEY);
+        for (const k of OLD_STORAGE_KEYS) {
+          raw = window.localStorage.getItem(k);
+          if (raw) break;
+        }
         migrating = !!raw;
       }
       if (raw) {

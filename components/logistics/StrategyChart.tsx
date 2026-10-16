@@ -11,6 +11,7 @@ import {
   grossTotal,
   runMinutes,
   series,
+  streakMaxRuns,
   type Inputs,
   type Metric,
   type Mode,
@@ -96,6 +97,7 @@ export default function StrategyChart({ mode, inp }: { mode: Mode; inp: Inputs }
     .map((l) => ({ key: l.key, label: l.label, color: l.color, dashed: l.dashed, v: l.data[l.data.length - 1].v }))
     .sort((a, b) => b.v - a.v);
   const S = RATES.s2.streaks!;
+  const mx = streakMaxRuns(mode, inp, "driveBack");
   const xMax = Math.max(inp.sessionMin, d.rtMin, d.rsMin);
 
   return (
@@ -241,9 +243,10 @@ export default function StrategyChart({ mode, inp }: { mode: Mode; inp: Inputs }
       <div className="footnotes">
         <p>
           <b>
-            S2 STREAKS (per level; run 1 = base, +1 level each run after, max on run 11) · Crates +{fmtCash(S.crate.cash)} / +{S.crate.xp} XP (max {S.crate.cap}) · Pallets +{fmtCash(S.pallet.cash)} / +{S.pallet.xp} XP (max{" "}
-            {S.pallet.cap}) · Passengers +{fmtCash(S.player.cash)} / +{S.player.xp} XP (max {S.player.cap}) · Returns +{fmtCash(S.returnTrip.cash)} / +{S.returnTrip.xp} XP (max{" "}
-            {S.returnTrip.cap})
+            S2 STREAKS (1st in a row = +0, +1 level for each one after) · Crates +{fmtCash(S.crate.cash)} / +{S.crate.xp} XP (max {S.crate.cap}) · Pallets +{fmtCash(S.pallet.cash)} / +{S.pallet.xp} XP (max {S.pallet.cap}) · Passengers +{fmtCash(S.player.cash)} / +{S.player.xp} XP (max {S.player.cap}) · Returns +{fmtCash(S.returnTrip.cash)} / +{S.returnTrip.xp} XP (max {S.returnTrip.cap})
+            {mx.pallet != null || mx.ret != null
+              ? ` · With ${inp.pallets} pallet${inp.pallets === 1 ? "" : "s"} per truck: ${[mx.pallet != null ? `pallets max on run ${mx.pallet}` : "", mx.ret != null ? `return trips max on run ${mx.ret}` : ""].filter(Boolean).join(", ")}`
+              : ""}
           </b>
         </p>
         <p>
