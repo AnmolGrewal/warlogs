@@ -260,7 +260,7 @@ export default function PatchNotes() {
             {c.id === "logistics" && (
               <div className="logi-cta">
                 <span>Is it better now? Depends how long you stay in the vehicle. Run the numbers for your own routes.</span>
-                <Link href="/logistics" className="btn">
+                <Link href="/" className="btn">
                   Open the logistics calculator →
                 </Link>
               </div>

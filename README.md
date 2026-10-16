@@ -2,8 +2,8 @@
 
 A small Next.js site with two pages:
 
-- **Patch Notes** (`/`) — the Season 02 notes sorted into categories, every change tagged **Buff / Nerf / New / Change / Fix**, with search, filters and charts.
-- **Logistics** (`/logistics`) — a calculator with tabs for **Helicopter**, **Driver**, **Driver · People**, **Helicopter · People** and a **Stacking table**. It compares Season 1 vs Season 2 pay, shows when the new delivery streaks pay off, and works out the break-even between driving back and respawning at base.
+- **Patch Notes** (`/patch-notes`) — the Season 02 notes sorted into categories, every change tagged **Buff / Nerf / New / Change / Fix**, with search, filters and charts.
+- **Logistics** (`/`, the home page; opens on the Driver tab) — a calculator with tabs for **Helicopter**, **Driver**, **Driver · People**, **Helicopter · People** and a **Stacking table**. It compares Season 1 vs Season 2 pay, shows when the new delivery streaks pay off, and works out the break-even between driving back and respawning at base.
 
 Your settings on the Logistics page are saved in your browser automatically.
 
@@ -49,8 +49,8 @@ Every push to `main` redeploys.
 | --- | --- |
 | `lib/patchNotes.ts` | All patch-note entries, categories and Buff/Nerf tags. Edit this to change the notes page. |
 | `lib/logistics.ts` | All reward numbers (`RATES`), default run settings (`DEFAULTS`) and the maths. |
-| `app/page.tsx` | Patch notes page |
-| `app/logistics/page.tsx` | Logistics page |
+| `app/patch-notes/page.tsx` | Patch notes page |
+| `app/page.tsx` | Logistics calculator (home page) |
 | `components/` | The UI pieces (charts, tabs, tables, inputs) |
 | `app/globals.css` | Colours and layout. Change `--accent` at the top to re-theme. |
 
