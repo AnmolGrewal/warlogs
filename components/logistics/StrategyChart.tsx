@@ -241,7 +241,7 @@ export default function StrategyChart({ mode, inp }: { mode: Mode; inp: Inputs }
       <div className="footnotes">
         <p>
           <b>
-            S2 STREAKS (per level) · Crates +{fmtCash(S.crate.cash)} / +{S.crate.xp} XP (max {S.crate.cap}) · Pallets +{fmtCash(S.pallet.cash)} / +{S.pallet.xp} XP (max{" "}
+            S2 STREAKS (per level; run 1 = base, +1 level each run after, max on run 11) · Crates +{fmtCash(S.crate.cash)} / +{S.crate.xp} XP (max {S.crate.cap}) · Pallets +{fmtCash(S.pallet.cash)} / +{S.pallet.xp} XP (max{" "}
             {S.pallet.cap}) · Passengers +{fmtCash(S.player.cash)} / +{S.player.xp} XP (max {S.player.cap}) · Returns +{fmtCash(S.returnTrip.cash)} / +{S.returnTrip.xp} XP (max{" "}
             {S.returnTrip.cap})
           </b>

@@ -32,10 +32,10 @@ const MODE_LABEL: Record<Mode, string> = {
 };
 
 export default function StackingTable({ inputs, metric, setMetric }: { inputs: Record<Mode, Inputs>; metric: Metric; setMetric: (m: Metric) => void }) {
-  const [rule, setRule] = usePersistentState<StreakRule>("warlogs-ladder-rule", "fromFirst", oneOf<StreakRule>("fromFirst", "afterFirst", "perRun"));
-  const ladder = Array.from({ length: rule === "afterFirst" ? 26 : 25 }, (_, i) => i + 1);
+  const [rule, setRule] = usePersistentState<StreakRule>("warlogs-ladder-rule-v2", "perRun", oneOf<StreakRule>("fromFirst", "afterFirst", "perRun"));
+  const ladder = Array.from({ length: rule === "fromFirst" ? 25 : 26 }, (_, i) => i + 1);
   const S2C = RATES.s2.streaks!;
-  const stepsFor = (k: number, cap: number) => Math.max(0, Math.min(rule === "afterFirst" ? k - 1 : k, cap));
+  const stepsFor = (k: number, cap: number) => Math.max(0, Math.min(rule === "fromFirst" ? k : k - 1, cap));
 
   return (
     <div className="grid" style={{ marginTop: 18, gap: 16 }}>
@@ -190,15 +190,16 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
         <div className="panel-head">
           <div>
             <h3>Streak ladder</h3>
-            <p className="sub">Bonus added to the Nth item in a row. Each counter (small, large, pallet, passengers, return) climbs on its own.</p>
+            <p className="sub">{rule === "perRun" ? "Bonus on each item in the Nth run in a row. Run 1 is base only; each later run adds one level." : "Bonus added to the Nth item in a row."} Each counter (small, large, pallet, passengers, return) climbs on its own.</p>
           </div>
           <Segmented
             label="Streak rule"
             value={rule}
             onChange={setRule}
             options={[
+              { value: "perRun", label: "Per run" },
               { value: "fromFirst", label: "Per item" },
-              { value: "afterFirst", label: "From 2nd" },
+              { value: "afterFirst", label: "Item, from 2nd" },
             ]}
           />
         </div>
@@ -206,7 +207,7 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
           <table>
             <thead>
               <tr>
-                <th className="n">In a row</th>
+                <th className="n">{rule === "perRun" ? "Run" : "In a row"}</th>
                 <th className="n">Crate bonus</th>
                 <th className="n">Pallet bonus</th>
                 <th className="n">Passenger bonus</th>

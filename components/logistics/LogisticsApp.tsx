@@ -15,7 +15,8 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "table", label: "Stacking table", icon: "📋" },
 ];
 
-const STORAGE_KEY = "warlogs-logistics-v3";
+const STORAGE_KEY = "warlogs-logistics-v4";
+const OLD_STORAGE_KEY = "warlogs-logistics-v3"; // migrated once: keeps your inputs, resets the streak rule
 
 export default function LogisticsApp() {
   const [tab, setTab] = useState<TabId>("driver");
@@ -25,9 +26,19 @@ export default function LogisticsApp() {
   // Load saved settings + tab from the URL hash (after first render, so server and client match)
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      let raw = window.localStorage.getItem(STORAGE_KEY);
+      let migrating = false;
+      if (!raw) {
+        raw = window.localStorage.getItem(OLD_STORAGE_KEY);
+        migrating = !!raw;
+      }
       if (raw) {
         const saved = JSON.parse(raw) as { inputs?: Partial<Record<Mode, Partial<Inputs>>>; metric?: Metric };
+        if (migrating && saved.inputs) {
+          (Object.keys(saved.inputs) as Mode[]).forEach((m) => {
+            if (saved.inputs?.[m]) delete saved.inputs[m]!.streakRule;
+          });
+        }
         if (saved.inputs) {
           setInputs((prev) => {
             const next = { ...prev };

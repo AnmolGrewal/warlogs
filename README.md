@@ -70,7 +70,7 @@ Season 2 streaks: crates **+$100 / +50 XP** per crate in a row (cap 10), pallets
 
 **Assumptions** (all changeable in the page under *Assumptions & costs*):
 
-- Streak level = items in a row: the 1st crate/pallet is level 1, the 10th is level 10 (max; passengers max at 25). With 2 pallets per run that means level 10 on run 5. Switchable to "per run" (level goes up once per run, max on run 10) or the stricter "from the 2nd".
+- Streaks go up once per run: run 1 pays base only (+0), run 2 is +1, and the streak maxes at +10 on run 11 (passengers +25 on run 26). Every item in a run gets that run's level; the first return trip is also +0. Switchable to "per item" (each crate/pallet is its own level) or "per item, from 2nd".
 - Helicopters don't get the return-trip reward — the notes only list it for ground vehicles.
 - Respawning at base breaks your delivery streaks.
 - Ground-vehicle passenger XP is the same as the regular one (the notes only restate the cash).

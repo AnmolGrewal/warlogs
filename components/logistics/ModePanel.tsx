@@ -211,7 +211,7 @@ export default function ModePanel({
           <div className="grid" style={{ gap: 12 }}>
             <div className="field">
               <span className="lbl">
-                Streak counting <small>“per crate in a row, up to 10”</small>
+                Streak counting <small>“in a row, up to 10”</small>
               </span>
               <Segmented
                 full
@@ -219,13 +219,13 @@ export default function ModePanel({
                 value={inp.streakRule}
                 onChange={(v) => set({ streakRule: v })}
                 options={[
-                  { value: "fromFirst", label: "Per item" },
                   { value: "perRun", label: "Per run" },
-                  { value: "afterFirst", label: "From 2nd" },
+                  { value: "fromFirst", label: "Per item" },
+                  { value: "afterFirst", label: "Per item, from 2nd" },
                 ]}
               />
               <small className="muted" style={{ fontSize: 12 }}>
-                <b>Per item</b> (default, matches the notes): every crate/pallet is its own level, so 2 pallets a run reach level 10 on run 5. <b>Per run</b>: the level goes up once per run, so it caps on run 10. <b>From 2nd</b>: like per item, but the first one in a row gets no bonus.
+                <b>Per run</b> (default): run 1 pays base only, run 2 is +1, and the streak maxes at +10 on run 11 (passengers +25 on run 26). <b>Per item</b>: every crate/pallet is its own level, so 2 pallets a run max out on run 5. <b>Per item, from 2nd</b>: same, but the first item gets +0.
               </small>
             </div>
             {air ? (
