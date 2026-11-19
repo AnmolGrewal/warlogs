@@ -16,20 +16,15 @@ import {
   YAxis,
 } from "recharts";
 import {
-  LEVELS,
-  RATES,
   breakEven,
   breakEvenCurve,
-  cumulativeCrossover,
   effectiveStrategy,
-  firstRunS2Wins,
   fmt,
   fmtCash,
   fmtMin,
   levelText,
   streakMaxRuns,
   isAir,
-  minutesToLevel,
   paysReturnTrip,
   perHour,
   runMinutes,
@@ -70,42 +65,33 @@ export default function ModePanel({
   const air = isAir(mode);
   const people = mode === "heliPeople" || mode === "driverPeople";
   const strategy = effectiveStrategy(mode, inp);
-  const [beSeason, setBeSeason] = usePersistentState<Season>("warlogs-breakeven-season", "s2", oneOf<Season>("s1", "s2"));
+  const [beSeason, setBeSeason] = usePersistentState<Season>("warlogs-breakeven-season-v2", "s3", oneOf<Season>("s2", "s3"));
   const unit = metric === "xp" ? "XP" : "$";
 
   const calc = useMemo(() => {
-    const s1h = perHour(mode, inp, "s1", metric);
-    const s2h = perHour(mode, inp, "s2", metric);
     const rt = runMinutes(mode, inp);
     const n = runsInSession(mode, inp);
-    const p1 = series(mode, inp, "s1", metric);
-    const p2 = series(mode, inp, "s2", metric);
-    const cumData = p1.map((p, i) => ({ min: p.t, s1: Math.round(p.v), s2: Math.round(p2[i].v) }));
+    const previousSeries = series(mode, inp, "s2", metric);
+    const currentSeries = series(mode, inp, "s3", metric);
+    const cumData = previousSeries.map((p, i) => ({ min: p.t, s2: Math.round(p.v), s3: Math.round(currentSeries[i].v) }));
     const nBars = Math.min(20, Math.max(10, n));
-    const r1 = simulate(mode, inp, "s1", nBars);
-    const r2 = simulate(mode, inp, "s2", nBars);
-    const perRun = r1.map((r, i) => ({
+    const previousRuns = simulate(mode, inp, "s2", nBars);
+    const currentRuns = simulate(mode, inp, "s3", nBars);
+    const perRun = previousRuns.map((r, i) => ({
       run: r.run,
-      s1: Math.round(metric === "xp" ? r.xp : r.cash),
-      s2: Math.round(metric === "xp" ? r2[i].xp : r2[i].cash),
+      s2: Math.round(metric === "xp" ? r.xp : r.cash),
+      s3: Math.round(metric === "xp" ? currentRuns[i].xp : currentRuns[i].cash),
     }));
-    const tableRows = simulate(mode, inp, "s2", Math.max(n, 12));
-    const tableS1 = simulate(mode, inp, "s1", Math.max(n, 12));
-    const firstWin = firstRunS2Wins(mode, inp, metric);
-    const cross = cumulativeCrossover(mode, inp, metric);
-    const levels = LEVELS.map((lvl) => ({
-      lvl,
-      s1: minutesToLevel(mode, inp, "s1", lvl),
-      s2: minutesToLevel(mode, inp, "s2", lvl),
-    }));
+    const tableRows = simulate(mode, inp, "s3", Math.max(n, 12));
+    const tableS2 = simulate(mode, inp, "s2", Math.max(n, 12));
     const both = {
+      s3: { xp: perHour(mode, inp, "s3", "xp"), cash: perHour(mode, inp, "s3", "cash") },
       s2: { xp: perHour(mode, inp, "s2", "xp"), cash: perHour(mode, inp, "s2", "cash") },
-      s1: { xp: perHour(mode, inp, "s1", "xp"), cash: perHour(mode, inp, "s1", "cash") },
     };
     const maxRuns = streakMaxRuns(mode, inp);
+    const runS3 = simulate(mode, inp, "s3", n);
     const runS2 = simulate(mode, inp, "s2", n);
-    const runS1 = simulate(mode, inp, "s1", n);
-    return { s1h, s2h, rt, n, cumData, perRun, tableRows, tableS1, firstWin, cross, levels, both, maxRuns, runS2, runS1 };
+    return { rt, n, cumData, perRun, tableRows, tableS2, both, maxRuns, runS3, runS2 };
   }, [mode, inp, metric]);
 
   const be = useMemo(() => (air ? null : breakEven(mode, inp, beSeason, metric)), [air, mode, inp, beSeason, metric]);
@@ -114,9 +100,6 @@ export default function ModePanel({
     [air, mode, inp, beSeason, metric],
   );
 
-  const diffPct = calc.s1h !== 0 ? ((calc.s2h - calc.s1h) / Math.abs(calc.s1h)) * 100 : 0;
-  const s2Better = calc.s2h >= calc.s1h;
-  const lvl20 = calc.levels.find((l) => l.lvl === 20);
   const zeroCargo = inp.small + inp.large + inp.pallets + inp.passengers === 0;
 
   return (
@@ -149,6 +132,19 @@ export default function ModePanel({
               <NumberField label="FOB award per pallet" unit="$" step={100} value={inp.fobAmount} onChange={(v) => set({ fobAmount: v })} />
             )}
           </div>
+          {(inp.small + inp.large + inp.pallets > 0 || !people) && (
+            <details style={{ marginTop: 12 }}>
+              <summary>Season 3 cash adjustments</summary>
+              <div className="grid" style={{ gap: 8 }}>
+                <p className="sub">Enter the share of Season 2 base cash you expect to earn. The patch gave no exact rates, so 100% uses the Season 2 payout.</p>
+                <NumberField label="Small crate payout" unit="%" max={100} value={inp.smallCrateCashPercent} onChange={(v) => set({ smallCrateCashPercent: v })} />
+                <NumberField label="Large crate payout" unit="%" max={100} value={inp.largeCrateCashPercent} onChange={(v) => set({ largeCrateCashPercent: v })} />
+                {(!people || inp.pallets > 0) && (
+                  <NumberField label="Pallet payout" hint="for outside FOBs, lower this and turn off the deposit award" unit="%" max={100} value={inp.palletCashPercent} onChange={(v) => set({ palletCashPercent: v })} />
+                )}
+              </div>
+            </details>
+          )}
           <p className="sub" style={{ marginTop: 10, marginBottom: 0, fontSize: 12 }}>
             Everything you change here is saved in this browser. “Reset” restores the defaults for this tab.
           </p>
@@ -262,7 +258,7 @@ export default function ModePanel({
             </div>
             {!people && <NumberField label="Pallet price" unit="$" step={50} value={inp.palletCost} onChange={(v) => set({ palletCost: v })} />}
             <small className="muted" style={{ fontSize: 12 }}>
-              Set these to what you pay. Costs only affect cash. Rewards assume full crates.
+              Set these to what you pay. Costs only affect cash. Adjust Season 3 crate payouts separately to model cheaper contents.
             </small>
           </div>
         </details>
@@ -285,28 +281,28 @@ export default function ModePanel({
 
         <div className="grid grid-4">
           <div className="stat accent">
-            <div className="label">Season 2 per hour</div>
-            <div className="value">{fmt(calc.both.s2.xp, "xp")}</div>
-            <div className="value-2">{fmtCash(calc.both.s2.cash)} cash</div>
+            <div className="label">Season 3 estimate per hour</div>
+            <div className="value">{fmt(calc.both.s3.xp, "xp")}</div>
+            <div className="value-2">{fmtCash(calc.both.s3.cash)} cash</div>
             <div className="hint">average over {fmtMin(inp.sessionMin)}</div>
           </div>
           <div className="stat">
-            <div className="label">Season 1 per hour</div>
-            <div className="value" style={{ color: "var(--s1)" }}>
-              {fmt(calc.both.s1.xp, "xp")}
+            <div className="label">Season 2 per hour</div>
+            <div className="value" style={{ color: "var(--s2)" }}>
+              {fmt(calc.both.s2.xp, "xp")}
             </div>
-            <div className="value-2">{fmtCash(calc.both.s1.cash)} cash</div>
-            <div className="hint">same run, old rewards</div>
+            <div className="value-2">{fmtCash(calc.both.s2.cash)} cash</div>
+            <div className="hint">same run with Season 2 rates</div>
           </div>
           <div className="stat">
-            <div className="label">Season 2 vs Season 1</div>
+            <div className="label">Season 3 vs Season 2</div>
             {(["xp", "cash"] as const).map((k) => {
-              const a = calc.both.s1[k];
-              const d = a !== 0 ? ((calc.both.s2[k] - a) / Math.abs(a)) * 100 : 0;
+              const a = calc.both.s2[k];
+              const delta = calc.both.s3[k] - a;
+              const pct = a === 0 ? null : (delta / Math.abs(a)) * 100;
               return (
-                <div key={k} className={k === "xp" ? "value" : "value-2"} style={{ color: d >= 0 ? "var(--buff)" : "var(--nerf)" }}>
-                  {d >= 0 ? "+" : ""}
-                  {Math.round(d)}% {k === "xp" ? "XP" : "cash"}
+                <div key={k} className={k === "xp" ? "value" : "value-2"} style={{ color: delta >= 0 ? "var(--buff)" : "var(--nerf)" }}>
+                  {pct === null ? fmt(delta, k) : `${pct >= 0 ? "+" : ""}${Math.round(pct)}% ${k === "xp" ? "XP" : "cash"}`}
                 </div>
               );
             })}
@@ -326,31 +322,7 @@ export default function ModePanel({
                 .filter(Boolean)
                 .join(" · ") || "Resets every run"}
             </div>
-            <div className="hint">Level 20: {lvl20?.s2 != null ? fmtMin(lvl20.s2) : "—"} (S1 {lvl20?.s1 != null ? fmtMin(lvl20.s1) : "—"})</div>
           </div>
-        </div>
-
-        <div className={`callout ${s2Better ? "good" : "bad"}`}>
-          {calc.firstWin ? (
-            <>
-              <strong>Streak payoff:</strong> Season 2 pays less on the first run, but from <b>run {calc.firstWin}</b> each run beats Season 1.{" "}
-              {calc.cross ? (
-                <>
-                  Your Season 2 total overtakes Season 1 after <b>run {calc.cross.run}</b> (~{fmtMin(calc.cross.minute)} in).
-                </>
-              ) : (
-                <>Your total never catches up within 200 runs.</>
-              )}{" "}
-              {(strategy === "respawn" && inp.deathResetsStreaks) && "But respawning resets the streak every run."}
-            </>
-          ) : (
-            <>
-              <strong>Season 1 always wins this run.</strong>{" "}
-              {strategy === "respawn" && inp.deathResetsStreaks
-                ? "Respawning resets your streaks every run, so you only ever get the lower Season 2 base pay."
-                : "The streak bonuses aren’t enough to make up for the lower base pay with this cargo."}
-            </>
-          )}
         </div>
 
         {/* Run by run: XP and cash side by side */}
@@ -359,7 +331,7 @@ export default function ModePanel({
             <div>
               <h3>Run by run</h3>
               <p className="sub">
-                XP and cash for every run in your {fmtMin(inp.sessionMin)} session. Streak levels are Season 2 (Season 1 has none). Cash is after truck and cargo costs, so run 1 includes buying
+                XP and cash for every run in your {fmtMin(inp.sessionMin)} session. The estimate uses the Season 2 streak rules. Cash is after truck and cargo costs, so run 1 includes buying
                 the vehicle.
               </p>
             </div>
@@ -369,18 +341,18 @@ export default function ModePanel({
               <thead>
                 <tr>
                   <th className="n">Run</th>
-                  <th>Streak levels (S2)</th>
+                  <th>Streak levels (S3)</th>
+                  <th className="n s3c">S3 XP</th>
+                  <th className="n s3c">S3 cash</th>
                   <th className="n s2c">S2 XP</th>
                   <th className="n s2c">S2 cash</th>
-                  <th className="n s1c">S1 XP</th>
-                  <th className="n s1c">S1 cash</th>
-                  <th className="n">XP vs S1</th>
-                  <th className="n">Cash vs S1</th>
+                  <th className="n">XP vs S2</th>
+                  <th className="n">Cash vs S2</th>
                 </tr>
               </thead>
               <tbody>
-                {calc.runS2.map((r, i) => {
-                  const o = calc.runS1[i];
+                {calc.runS3.map((r, i) => {
+                  const o = calc.runS2[i];
                   const dx = r.xp - o.xp;
                   const dc = r.cash - o.cash;
                   const tags: string[] = [];
@@ -403,12 +375,12 @@ export default function ModePanel({
                           </span>
                         ))}
                       </td>
-                      <td className="n s2c" style={{ fontWeight: 700 }}>
+                      <td className="n s3c" style={{ fontWeight: 700 }}>
                         {Math.round(r.xp).toLocaleString("en-US")}
                       </td>
-                      <td className="n s2c">{fmtCash(r.cash)}</td>
-                      <td className="n s1c">{Math.round(o.xp).toLocaleString("en-US")}</td>
-                      <td className="n s1c">{fmtCash(o.cash)}</td>
+                      <td className="n s3c">{fmtCash(r.cash)}</td>
+                      <td className="n s2c">{Math.round(o.xp).toLocaleString("en-US")}</td>
+                      <td className="n s2c">{fmtCash(o.cash)}</td>
                       <td className={`n ${dx >= 0 ? "yes" : "no"}`}>
                         {dx >= 0 ? "+" : "−"}
                         {Math.abs(Math.round(dx)).toLocaleString("en-US")}
@@ -423,18 +395,18 @@ export default function ModePanel({
               </tbody>
               <tfoot>
                 {(() => {
-                  const a = calc.runS2[calc.runS2.length - 1];
-                  const o = calc.runS1[calc.runS1.length - 1];
+                  const a = calc.runS3[calc.runS3.length - 1];
+                  const o = calc.runS2[calc.runS2.length - 1];
                   const dx = a.cumXp - o.cumXp;
                   const dc = a.cumCash - o.cumCash;
                   return (
                     <tr>
                       <td className="n">Total</td>
-                      <td>{calc.runS2.length} runs</td>
-                      <td className="n s2c">{Math.round(a.cumXp).toLocaleString("en-US")}</td>
-                      <td className="n s2c">{fmtCash(a.cumCash)}</td>
-                      <td className="n s1c">{Math.round(o.cumXp).toLocaleString("en-US")}</td>
-                      <td className="n s1c">{fmtCash(o.cumCash)}</td>
+                      <td>{calc.runS3.length} runs</td>
+                      <td className="n s3c">{Math.round(a.cumXp).toLocaleString("en-US")}</td>
+                      <td className="n s3c">{fmtCash(a.cumCash)}</td>
+                      <td className="n s2c">{Math.round(o.cumXp).toLocaleString("en-US")}</td>
+                      <td className="n s2c">{fmtCash(o.cumCash)}</td>
                       <td className={`n ${dx >= 0 ? "yes" : "no"}`}>
                         {dx >= 0 ? "+" : "−"}
                         {Math.abs(Math.round(dx)).toLocaleString("en-US")}
@@ -468,8 +440,8 @@ export default function ModePanel({
                 value={beSeason}
                 onChange={setBeSeason}
                 options={[
-                  { value: "s1", label: "S1" },
                   { value: "s2", label: "S2" },
+                  { value: "s3", label: "S3 estimate" },
                 ]}
               />
             </div>
@@ -530,11 +502,11 @@ export default function ModePanel({
           </div>
         )}
 
-        {/* Cumulative S1 vs S2 */}
+        {/* Cumulative S2 vs S3 */}
         <div className="panel">
           <div className="panel-head">
             <div>
-              <h3>Season 1 vs Season 2 over a session</h3>
+              <h3>Season 2 vs Season 3 over a session</h3>
               <p className="sub">
                 Total {metric === "xp" ? "XP" : "cash"} earned as you keep running
                 {air ? "" : strategy === "driveBack" ? " (driving back)" : " (respawning)"}. Each dot = a completed run{metric === "cash" ? "; cash starts at minus the vehicle" : ""}.
@@ -556,8 +528,8 @@ export default function ModePanel({
                 <YAxis {...AXIS} tickFormatter={kfmt} width={74} label={{ value: `Total ${unit}`, angle: -90, position: "insideLeft", fill: "var(--faint)", fontSize: 12, dy: 30 }} />
                 <Tooltip {...TOOLTIP} labelFormatter={(l: unknown) => `${String(l)} min`} formatter={(v: unknown, name: unknown) => [fmt(Number(v), metric), String(name)]} />
                 <Legend wrapperStyle={{ fontSize: 13 }} verticalAlign="top" height={28} />
-                <Line type="linear" dataKey="s1" name="Season 1" stroke="var(--s1)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--s1)", strokeWidth: 0 }} isAnimationActive={false} />
                 <Line type="linear" dataKey="s2" name="Season 2" stroke="var(--s2)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--s2)", strokeWidth: 0 }} isAnimationActive={false} />
+                <Line type="linear" dataKey="s3" name="Season 3 estimate" stroke="var(--s3)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--s3)", strokeWidth: 0 }} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -569,7 +541,7 @@ export default function ModePanel({
             <div>
               <h3>Earnings per run</h3>
               <p className="sub">
-                Season 1 pays the same every run. Season 2 climbs as streaks build
+                Pay climbs as streaks build
                 {calc.maxRuns.all != null ? `, then flattens once every streak is maxed on run ${calc.maxRuns.all}` : ""}.
               </p>
             </div>
@@ -582,8 +554,8 @@ export default function ModePanel({
                 <YAxis {...AXIS} tickFormatter={kfmt} width={74} label={{ value: `${unit} per run`, angle: -90, position: "insideLeft", fill: "var(--faint)", fontSize: 12, dy: 30 }} />
                 <Tooltip {...TOOLTIP} labelFormatter={(l: unknown) => `Run ${String(l)}`} formatter={(v: unknown, name: unknown) => [fmt(Number(v), metric), String(name)]} />
                 <Legend wrapperStyle={{ fontSize: 13 }} verticalAlign="top" height={28} />
-                <Bar dataKey="s1" name="Season 1" fill="var(--s1)" radius={[3, 3, 0, 0]} />
                 <Bar dataKey="s2" name="Season 2" fill="var(--s2)" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="s3" name="Season 3 estimate" fill="var(--s3)" radius={[3, 3, 0, 0]} />
                 {calc.maxRuns.pallet != null && calc.maxRuns.pallet !== calc.maxRuns.all && (
                   <ReferenceLine x={calc.maxRuns.pallet} stroke="var(--buff)" strokeDasharray="4 4" label={{ value: "Pallets max", position: "top", fill: "var(--buff)", fontSize: 11 }} />
                 )}
@@ -595,48 +567,9 @@ export default function ModePanel({
           </div>
         </div>
 
-        {/* Time to level */}
-        <div className="panel">
-          <div className="panel-head">
-            <div>
-              <h3>Time to reach a role level</h3>
-              <p className="sub">Doing only this run from level 1, using each season’s XP curve and rewards.</p>
-            </div>
-          </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Role level</th>
-                  <th className="n">S1 XP needed</th>
-                  <th className="n">S1 time</th>
-                  <th className="n">S2 XP needed</th>
-                  <th className="n">S2 time</th>
-                  <th className="n">Faster by</th>
-                </tr>
-              </thead>
-              <tbody>
-                {calc.levels.map((l) => {
-                  const faster = l.s1 != null && l.s2 != null ? ((l.s1 - l.s2) / l.s1) * 100 : null;
-                  return (
-                    <tr key={l.lvl}>
-                      <td>Level {l.lvl}</td>
-                      <td className="n muted">{RATES.s1.roleXp[l.lvl].toLocaleString("en-US")}</td>
-                      <td className="n s1c">{l.s1 != null ? fmtMin(l.s1) : "—"}</td>
-                      <td className="n muted">{RATES.s2.roleXp[l.lvl].toLocaleString("en-US")}</td>
-                      <td className="n s2c">{l.s2 != null ? fmtMin(l.s2) : "—"}</td>
-                      <td className={`n ${faster != null && faster >= 0 ? "yes" : "no"}`}>{faster != null ? `${faster >= 0 ? "" : "+"}${Math.round(Math.abs(faster))}%${faster < 0 ? " slower" : ""}` : "—"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
         {/* Run-by-run breakdown */}
         <details className="panel">
-          <summary>Where each run’s pay comes from (Season 2, {metric === "xp" ? "XP" : "cash"})</summary>
+          <summary>Where each run’s pay comes from (Season 3, {metric === "xp" ? "XP" : "cash"})</summary>
           <div className="table-wrap" style={{ maxHeight: 460 }}>
             <table>
               <thead>
@@ -669,16 +602,16 @@ export default function ModePanel({
                   )}
                   {metric === "cash" && inp.fobDeposit && inp.pallets > 0 && <th className="n">FOB award</th>}
                   {metric === "cash" && <th className="n">Spend</th>}
+                  <th className="n">S3 run</th>
                   <th className="n">S2 run</th>
-                  <th className="n">S1 run</th>
+                  <th className="n">S3 total</th>
                   <th className="n">S2 total</th>
-                  <th className="n">S1 total</th>
                 </tr>
               </thead>
               <tbody>
                 {calc.tableRows.map((r, i) => {
                   const k = metric === "xp" ? "xp" : "cash";
-                  const s1 = calc.tableS1[i];
+                  const s2 = calc.tableS2[i];
                   const v = (x: { cash: number; xp: number }) => fmt(x[k], metric);
                   return (
                     <tr key={r.run}>
@@ -687,25 +620,25 @@ export default function ModePanel({
                       {!people || inp.small + inp.large > 0 ? (
                         <>
                           <td className="n">{v(r.b.crates)}</td>
-                          <td className="n s2c">+{v(r.b.crateStreak)}</td>
+                          <td className="n s3c">+{v(r.b.crateStreak)}</td>
                         </>
                       ) : null}
                       {inp.pallets > 0 && (
                         <>
                           <td className="n">{v(r.b.pallets)}</td>
-                          <td className="n s2c">+{v(r.b.palletStreak)}</td>
+                          <td className="n s3c">+{v(r.b.palletStreak)}</td>
                         </>
                       )}
                       {inp.passengers > 0 && (
                         <>
                           <td className="n">{v(r.b.players)}</td>
-                          <td className="n s2c">+{v(r.b.playerStreak)}</td>
+                          <td className="n s3c">+{v(r.b.playerStreak)}</td>
                         </>
                       )}
                       {paysReturnTrip(mode, inp) && (
                         <>
                           <td className="n">{v(r.b.returnTrip)}</td>
-                          <td className="n s2c">+{v(r.b.returnStreak)}</td>
+                          <td className="n s3c">+{v(r.b.returnStreak)}</td>
                         </>
                       )}
                       {metric === "cash" && inp.fobDeposit && inp.pallets > 0 && <td className="n yes">+{fmt(r.b.fob.cash, "cash")}</td>}
@@ -713,9 +646,9 @@ export default function ModePanel({
                       <td className="n" style={{ fontWeight: 700 }}>
                         {fmt(metric === "xp" ? r.xp : r.cash, metric)}
                       </td>
-                      <td className="n s1c">{fmt(metric === "xp" ? s1.xp : s1.cash, metric)}</td>
-                      <td className="n s2c">{fmt(metric === "xp" ? r.cumXp : r.cumCash, metric)}</td>
-                      <td className="n s1c">{fmt(metric === "xp" ? s1.cumXp : s1.cumCash, metric)}</td>
+                      <td className="n s2c">{fmt(metric === "xp" ? s2.xp : s2.cash, metric)}</td>
+                      <td className="n s3c">{fmt(metric === "xp" ? r.cumXp : r.cumCash, metric)}</td>
+                      <td className="n s2c">{fmt(metric === "xp" ? s2.cumXp : s2.cumCash, metric)}</td>
                     </tr>
                   );
                 })}

@@ -2,8 +2,8 @@
 
 A small Next.js site with two pages:
 
-- **Patch Notes** (`/patch-notes`) — the Season 02 notes sorted into categories, every change tagged **Buff / Nerf / New / Change / Fix**, with search, filters and charts.
-- **Logistics** (`/`, the home page; opens on the Driver tab) — a calculator with tabs for **Helicopter**, **Driver**, **Driver · People**, **Helicopter · People** and a **Stacking table**. It compares Season 1 vs Season 2 pay, shows when the new delivery streaks pay off, and works out the break-even between driving back and respawning at base.
+- **Patch Notes** (`/patch-notes`) — the Season 03 launch changes sorted into categories, every change tagged **Buff / Nerf / New / Change / Fix**, with search, filters and charts.
+- **Logistics** (`/`, the home page; opens on the Driver tab) — a calculator with tabs for **Helicopter**, **Driver**, **Driver · People**, **Helicopter · People** and a **Stacking table**. It estimates Season 3 earnings against a Season 2 baseline and compares driving back with respawning at base.
 
 Your settings on the Logistics page are saved in your browser automatically.
 
@@ -56,15 +56,17 @@ Every push to `main` redeploys.
 
 ## How the logistics maths works
 
-Numbers come straight from the Season 02 patch notes:
+The [Season 3 launch notes](https://store.steampowered.com/news/app/1867240/view/688648135317127221) reduce payouts for lower-value crates and pallets dropped outside friendly FOBs. Use **Season 3 cash adjustments** to enter a percentage of the Season 2 base cash payout for each cargo type. For deliveries outside a friendly FOB, turn off the deposit award as well.
 
-| Action | Season 1 | Season 2 |
-| --- | --- | --- |
-| Small crate | $500 / 250 XP (air 200) | $250 / 200 XP (air 150) |
-| Large crate | $1,000 / 500 XP (air 400) | $500 / 400 XP (air 300) |
-| Pallet | $2,500 / 500 XP (ground 750) | $1,250 / 400 XP (ground 500) |
-| Player delivered | $150 / 50 XP (ground $500) | $100 / 25 XP (ground $350) |
-| Return trip (ground) | $250 / 100 XP | $150 / 50 XP |
+The patch notes give no exact new rates. The estimate defaults to 100% of the Season 2 base cash payout and carries forward Season 2 XP and streak bonuses. The calculator also omits the new fuel kickback and weekly catch-up bonus because the notes give no amounts. The new level thresholds are unpublished, so the site shows XP earned per run and per hour.
+
+| Action | Season 2 baseline |
+|---|---|
+| Small crate | $250 / 200 XP (air 150) |
+| Large crate | $500 / 400 XP (air 300) |
+| Pallet | $1,250 / 400 XP (ground 500) |
+| Player delivered | $100 / 25 XP (ground $350) |
+| Return trip (ground) | $150 / 50 XP |
 
 Season 2 streaks: crates **+$100 / +50 XP** per crate in a row (cap 10), pallets **+$150 / +25 XP** (cap 10, after the stealth hotfix; was +$250 / +100 XP), players **+$25 / +5 XP** (cap 25), return trips **+$50 / +25 XP** (cap 10). Small and large crates keep separate streak counters.
 
@@ -82,4 +84,4 @@ Season 2 streaks: crates **+$100 / +50 XP** per crate in a row (cap 10), pallets
 
 Every setting (inputs on each tab, the XP/Cash toggle, chart toggles) is saved in your browser's localStorage. "Reset" restores the defaults for that tab.
 
-Source: [WARDOGS | Season 02 Patch Notes](https://store.steampowered.com/news/app/1867240/view/670630562731396445), 14 Oct 2026. Fan-made, not affiliated with BULKHEAD or Team17.
+The comparison baseline comes from the [Season 2 patch notes](https://store.steampowered.com/news/app/1867240/view/670630562731396445) and the prior WarLogs pallet streak adjustment. WarLogs is fan-made and unaffiliated with BULKHEAD and Team17.

@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-mono-face" });
 
 export const metadata: Metadata = {
-  title: "WARDOGS Season 2 — Patch Notes & Logistics Calculator",
-  description: "Season 02 patch notes broken down by category with buffs and nerfs, plus a logistics XP/cash calculator comparing Season 1 and Season 2.",
+  title: "WARDOGS Season 3 — Patch Notes & Logistics Calculator",
+  description: "Season 03 patch notes broken down by category with buffs and nerfs, plus a logistics XP/cash calculator with Season 3 estimates and a Season 2 baseline.",
 };
 
 export const viewport: Viewport = { themeColor: "#0e110f", width: "device-width", initialScale: 1 };
@@ -23,28 +23,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="site-header">
           <div className="container">
             <Link href="/" className="brand">
-              <span className="brand-mark">S2</span>
+              <span className="brand-mark">S3</span>
               <span className="brand-text">
-                WARDOGS <span>SEASON 2 BRIEFING</span>
+                WARDOGS <span>SEASON 3 BRIEFING</span>
               </span>
             </Link>
             <NavLinks />
           </div>
         </header>
-        <div className="hotfix-banner" role="status">
-          <div className="container">
-            <span className="hotfix-tag">Hotfix</span>
-            <strong>Legitimate Logistic Streak Nerf 75% stealth hotfix added</strong>
-            <span className="hotfix-detail">Supply pallet streak now +25 XP / +$150 per level (was +100 XP / +$250), helicopter and driver. Base pay unchanged.</span>
-          </div>
-        </div>
         <main className="container">{children}</main>
         <footer className="container foot">
-          Fan-made, not affiliated with BULKHEAD or Team17. Numbers from the official{" "}
+          Fan-made, not affiliated with BULKHEAD or Team17. Source{" "}
           <a href={SOURCE_URL} target="_blank" rel="noreferrer">
-            Season 02 Patch Notes
+            Season 03 Patch Notes
           </a>{" "}
-          (14 Oct 2026). Buff/nerf tags and calculator assumptions are our interpretation.
+          (11 Nov 2026).
         </footer>
       </body>
     </html>
