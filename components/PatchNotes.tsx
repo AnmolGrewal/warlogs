@@ -152,25 +152,19 @@ export default function PatchNotes() {
       {/* Headline tiles */}
       <div className="grid grid-4 section">
         <div className="stat accent">
-          <div className="label">Level 20 now needs</div>
-          <div className="value">111,500 XP</div>
-          <div className="hint">was 250,000 — 55% quicker</div>
+          <div className="label">New map</div>
+          <div className="value">Sabatulo</div>
+          <div className="hint">WARDOGS’ first urban map</div>
         </div>
         <div className="stat">
-          <div className="label">.308 damage</div>
-          <div className="value" style={{ color: "var(--nerf)" }}>
-            −25%
-          </div>
-          <div className="hint">
-            Also <b>7.62x54R −20%</b>, <b>7.62x39 −19%</b>, <b>.50 Cal −16%</b>
-          </div>
+          <div className="label">New mode</div>
+          <div className="value">Limited</div>
+          <div className="hint">Early- and mid-season vendor gear</div>
         </div>
         <div className="stat">
-          <div className="label">Logistics base pay</div>
-          <div className="value" style={{ color: "var(--nerf)" }}>
-            ½ cash
-          </div>
-          <div className="hint">but new streaks up to +$1,000 per crate</div>
+          <div className="label">Progression</div>
+          <div className="value">Multi-track</div>
+          <div className="hint">Shared gear unlocks and weekly catch-up bonuses</div>
         </div>
         <div className="stat">
           <div className="label">Changes tracked</div>
@@ -259,7 +253,7 @@ export default function PatchNotes() {
             </ul>
             {c.id === "logistics" && (
               <div className="logi-cta">
-                <span>Is it better now? Depends how long you stay in the vehicle. Run the numbers for your own routes.</span>
+                <span>Model the cargo payout changes for your route.</span>
                 <Link href="/" className="btn">
                   Open the logistics calculator →
                 </Link>

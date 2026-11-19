@@ -31,10 +31,10 @@ interface LineDef {
 }
 
 const LINES: LineDef[] = [
+  { key: "s3-rt", season: "s3", strategy: "driveBack", label: "Season 3 estimate — round trips", color: "var(--s3)", dashed: false },
   { key: "s2-rt", season: "s2", strategy: "driveBack", label: "Season 2 — round trips", color: "var(--s2)", dashed: false },
-  { key: "s1-rt", season: "s1", strategy: "driveBack", label: "Season 1 — round trips", color: "var(--s1)", dashed: false },
+  { key: "s3-rs", season: "s3", strategy: "respawn", label: "Season 3 estimate — drop & respawn", color: "var(--s3)", dashed: true },
   { key: "s2-rs", season: "s2", strategy: "respawn", label: "Season 2 — drop & respawn", color: "var(--s2)", dashed: true },
-  { key: "s1-rs", season: "s1", strategy: "respawn", label: "Season 1 — drop & respawn", color: "var(--s1)", dashed: true },
 ];
 
 function cargoText(inp: Inputs) {
@@ -59,24 +59,24 @@ function tickList(session: number, step: number): number[] {
 /** Round trips vs drop-off-and-respawn over one match, for ground vehicles. */
 export default function StrategyChart({ mode, inp }: { mode: Mode; inp: Inputs }) {
   const [metric, setMetric] = usePersistentState<Metric>("warlogs-strategy-metric", "cash", oneOf<Metric>("cash", "xp"));
-  const [show, setShow] = usePersistentState<"both" | "s2">("warlogs-strategy-seasons", "both", oneOf<"both" | "s2">("both", "s2"));
+  const [show, setShow] = usePersistentState<"both" | "s3">("warlogs-strategy-seasons-v2", "both", oneOf<"both" | "s3">("both", "s3"));
 
   const d = useMemo(() => {
-    const lines = LINES.filter((l) => show === "both" || l.season === "s2").map((l) => ({
+    const lines = LINES.filter((l) => show === "both" || l.season === "s3").map((l) => ({
       ...l,
       data: series(mode, inp, l.season, metric, l.strategy),
     }));
     const tot = {
-      s1: { rt: grossTotal(mode, inp, "s1", "driveBack"), rs: grossTotal(mode, inp, "s1", "respawn") },
       s2: { rt: grossTotal(mode, inp, "s2", "driveBack"), rs: grossTotal(mode, inp, "s2", "respawn") },
+      s3: { rt: grossTotal(mode, inp, "s3", "driveBack"), rs: grossTotal(mode, inp, "s3", "respawn") },
     };
     return { lines, tot, rtMin: runMinutes(mode, inp, "driveBack"), rsMin: runMinutes(mode, inp, "respawn") };
   }, [mode, inp, metric, show]);
 
-  const s2 = d.tot.s2;
-  const cashGap = s2.rt.net - s2.rs.net; // + = round trips earn more cash
-  const xpGap = s2.rt.xp - s2.rs.xp; // + = round trips earn more XP
-  const trucksRespawn = s2.rs.runs; // you buy a truck every run when you abandon it
+  const s3 = d.tot.s3;
+  const cashGap = s3.rt.net - s3.rs.net; // + = round trips earn more cash
+  const xpGap = s3.rt.xp - s3.rs.xp; // + = round trips earn more XP
+  const trucksRespawn = s3.rs.runs; // you buy a truck every run when you abandon it
 
   let headline: string;
   let tone: "good" | "bad" | "" = "";
@@ -96,7 +96,7 @@ export default function StrategyChart({ mode, inp }: { mode: Mode; inp: Inputs }
   const ends = d.lines
     .map((l) => ({ key: l.key, label: l.label, color: l.color, dashed: l.dashed, v: l.data[l.data.length - 1].v }))
     .sort((a, b) => b.v - a.v);
-  const S = RATES.s2.streaks!;
+  const S = RATES.s3.streaks;
   const mx = streakMaxRuns(mode, inp, "driveBack");
   const xMax = Math.max(inp.sessionMin, d.rtMin, d.rsMin);
 
@@ -125,8 +125,8 @@ export default function StrategyChart({ mode, inp }: { mode: Mode; inp: Inputs }
           value={show}
           onChange={setShow}
           options={[
-            { value: "both", label: "S1 + S2" },
-            { value: "s2", label: "S2 only" },
+            { value: "both", label: "S2 + S3" },
+            { value: "s3", label: "S3 only" },
           ]}
         />
       </div>
@@ -213,14 +213,14 @@ export default function StrategyChart({ mode, inp }: { mode: Mode; inp: Inputs }
             </tr>
           </thead>
           <tbody>
-            {(["s2", "s1"] as Season[]).flatMap((season) =>
+            {(["s3", "s2"] as Season[]).flatMap((season) =>
               (["rt", "rs"] as const).map((k) => {
                 const t = d.tot[season][k];
                 const trucks = k === "rt" ? 1 : t.runs;
                 return (
                   <tr key={season + k}>
-                    <td className={season === "s2" ? "s2c" : "s1c"}>
-                      {season === "s2" ? "Season 2" : "Season 1"} — {k === "rt" ? "round trips" : "drop & respawn"}
+                    <td className={season === "s3" ? "s3c" : "s2c"}>
+                      {RATES[season].label} — {k === "rt" ? "round trips" : "drop & respawn"}
                     </td>
                     <td className="n">{t.runs}</td>
                     <td className="n">{Math.round(t.xp).toLocaleString("en-US")}</td>
@@ -243,23 +243,23 @@ export default function StrategyChart({ mode, inp }: { mode: Mode; inp: Inputs }
       <div className="footnotes">
         <p>
           <b>
-            S2 STREAKS (1st in a row = +0, +1 level for each one after) · Crates +{fmtCash(S.crate.cash)} / +{S.crate.xp} XP (max {S.crate.cap}) · Pallets +{fmtCash(S.pallet.cash)} / +{S.pallet.xp} XP (max {S.pallet.cap}) · Passengers +{fmtCash(S.player.cash)} / +{S.player.xp} XP (max {S.player.cap}) · Returns +{fmtCash(S.returnTrip.cash)} / +{S.returnTrip.xp} XP (max {S.returnTrip.cap})
+            MODELED STREAK BONUSES · Crates +{fmtCash(S.crate.cash)} / +{S.crate.xp} XP (max {S.crate.cap}) · Pallets +{fmtCash(S.pallet.cash)} / +{S.pallet.xp} XP (max {S.pallet.cap}) · Passengers +{fmtCash(S.player.cash)} / +{S.player.xp} XP (max {S.player.cap}) · Returns +{fmtCash(S.returnTrip.cash)} / +{S.returnTrip.xp} XP (max {S.returnTrip.cap})
             {mx.pallet != null || mx.ret != null
               ? ` · With ${inp.pallets} pallet${inp.pallets === 1 ? "" : "s"} per truck: ${[mx.pallet != null ? `pallets max on run ${mx.pallet}` : "", mx.ret != null ? `return trips max on run ${mx.ret}` : ""].filter(Boolean).join(", ")}`
               : ""}
           </b>
         </p>
         <p>
-          Season 2 gross: round trips {fmtCash(s2.rt.gross)} | respawn {fmtCash(s2.rs.gross)}
+          Estimated Season 3 gross: round trips {fmtCash(s3.rt.gross)} | respawn {fmtCash(s3.rs.gross)}
           {inp.fobDeposit && inp.pallets > 0 ? `, including a ${fmtCash(inp.fobAmount)} FOB deposit award per pallet` : ""}. Net includes a {fmtCash(inp.vehicleCost)} truck — bought once for round trips,{" "}
           {trucksRespawn}× ({fmtCash(inp.vehicleCost * trucksRespawn)}) when you abandon it every run — plus cargo each run.
         </p>
         <p>
-          Respawning skips the {fmt(RATES.s2.returnTrip.cash, "cash")} / {RATES.s2.returnTrip.xp} XP return trip and its streak
+          Respawning skips the {fmt(RATES.s3.returnTrip.cash, "cash")} / {RATES.s3.returnTrip.xp} XP return trip and its streak
           {inp.deathResetsStreaks ? ", and (assumed) resets your delivery streak every run" : ""}. Streak sizes: crate +{fmtCash(S.crate.cash)}/level, return +{fmtCash(S.returnTrip.cash)}/level.
         </p>
         <p className="muted">
-          Perfect runs (no losses). Reward values from the Season 02 patch notes; truck and cargo prices are your inputs. Change them under “Assumptions & costs”.
+          Perfect runs (no losses). Season 3 estimates use the Season 2 baseline and your cash adjustments. Truck and cargo prices are your inputs. Change them under “Assumptions & costs”.
         </p>
       </div>
     </div>

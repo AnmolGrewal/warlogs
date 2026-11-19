@@ -16,9 +16,8 @@ import {
 } from "@/lib/logistics";
 import { Segmented } from "./Controls";
 
-const S1 = RATES.s1;
 const S2 = RATES.s2;
-const ST = S2.streaks!;
+const ST = S2.streaks;
 
 type Answer = "yes" | "no" | "maybe";
 const A = ({ v, children }: { v: Answer; children?: React.ReactNode }) => (
@@ -35,7 +34,6 @@ const MODE_LABEL: Record<Mode, string> = {
 export default function StackingTable({ inputs, metric, setMetric }: { inputs: Record<Mode, Inputs>; metric: Metric; setMetric: (m: Metric) => void }) {
   const [rule, setRule] = usePersistentState<StreakRule>("warlogs-ladder-rule-v3", "afterFirst", oneOf<StreakRule>("fromFirst", "afterFirst", "perRun"));
   const ladder = Array.from({ length: rule === "fromFirst" ? 25 : 26 }, (_, i) => i + 1);
-  const S2C = RATES.s2.streaks!;
   const stepsFor = (k: number, cap: number) => Math.max(0, Math.min(rule === "fromFirst" ? k : k - 1, cap));
 
   return (
@@ -45,7 +43,7 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
         <div className="panel-head">
           <div>
             <h3>Does it stack? Helicopter vs driving</h3>
-            <p className="sub">What the Season 02 notes actually say for each bonus, and what the calculator assumes.</p>
+            <p className="sub">The Season 3 estimate carries forward the Season 2 streak rules. Cargo cash adjustments are set on each logistics tab.</p>
           </div>
         </div>
         <div className="table-wrap">
@@ -56,7 +54,7 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                 <th>Helicopter</th>
                 <th>Ground vehicle</th>
                 <th>Stacks separately?</th>
-                <th>What the notes say</th>
+                <th>Season 2 baseline and assumptions</th>
               </tr>
             </thead>
             <tbody>
@@ -72,14 +70,14 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                 <td><A v="yes" /></td>
                 <td><A v="yes" /></td>
                 <td><A v="yes">Small and large separate</A></td>
-                <td className="wrap muted">{`+${fmtCash(S2C.crate.cash)} / +${S2C.crate.xp} XP per crate in a row, up to 10.`} No vehicle restriction, so helicopters get it too.</td>
+                <td className="wrap muted">{`+${fmtCash(ST.crate.cash)} / +${ST.crate.xp} XP per crate in a row, up to 10.`} No vehicle restriction, so helicopters get it too.</td>
               </tr>
               <tr>
                 <td>Pallet delivery + streak</td>
                 <td><A v="yes" /></td>
                 <td><A v="yes">Yes</A> <span className="muted">(more XP)</span></td>
                 <td><A v="yes">Own counter</A></td>
-                <td className="wrap muted">{`Pallet XP 400, or 500 from a ground vehicle. Streak +${fmtCash(S2C.pallet.cash)} / +${S2C.pallet.xp} XP per pallet, up to 10.`}</td>
+                <td className="wrap muted">{`Pallet XP 400, or 500 from a ground vehicle. Streak +${fmtCash(ST.pallet.cash)} / +${ST.pallet.xp} XP per pallet, up to 10.`}</td>
               </tr>
               <tr>
                 <td>Passenger delivery</td>
@@ -93,21 +91,21 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                 <td><A v="yes" /></td>
                 <td><A v="yes" /></td>
                 <td><A v="yes">Own counter</A></td>
-                <td className="wrap muted">+$25 / +5 XP per player in a row, up to 25. A full Lakota maxes it in ~2 trips.</td>
+                <td className="wrap muted">+$25 / +5 XP per player in a row, up to 25. </td>
               </tr>
               <tr>
                 <td>Return trip (base)</td>
                 <td><A v="no">Not listed</A></td>
                 <td><A v="yes">Yes</A> <span className="muted">($150 / 50 XP)</span></td>
                 <td>—</td>
-                <td className="wrap muted">Only “Return Trip (ground vehicle)” appears, in both seasons. Calculator assumes helicopters don’t get it (toggle in Assumptions).</td>
+                <td className="wrap muted">Only the ground return trip has a published rate. Calculator assumes helicopters don’t get it (toggle in Assumptions).</td>
               </tr>
               <tr>
                 <td>Return-trip streak</td>
                 <td><A v="maybe">Only if the above applies</A></td>
                 <td><A v="yes" /></td>
                 <td><A v="yes">Own counter</A></td>
-                <td className="wrap muted">{`+${fmtCash(S2C.returnTrip.cash)} / +${S2C.returnTrip.xp} XP per trip in a row, up to 10.`} Drivers run this <b>and</b> the delivery streaks at the same time.</td>
+                <td className="wrap muted">{`+${fmtCash(ST.returnTrip.cash)} / +${ST.returnTrip.xp} XP per trip in a row, up to 10.`} Drivers run this <b>and</b> the delivery streaks at the same time.</td>
               </tr>
               <tr>
                 <td>FOB deposit award (optional)</td>
@@ -115,8 +113,7 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                 <td><A v="yes">Pallets only</A></td>
                 <td>—</td>
                 <td className="wrap muted">
-                  Default +$1,800 per supply pallet, on by default, in both seasons. Small and large crates
-                  don’t get it. Notes only say FOB Supplied Assist is now split between assisting players.
+                  Default +$1,800 per supply pallet, on by default, as a calculator assumption.
                 </td>
               </tr>
               <tr>
@@ -138,8 +135,8 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
       <div className="panel">
         <div className="panel-head">
           <div>
-            <h3>Reward values: Season 1 → Season 2</h3>
-            <p className="sub">Base pay per item, plus the most a Season 2 streak can add on top.</p>
+            <h3>Season 2 baseline rewards</h3>
+            <p className="sub">Base pay and maximum streak bonuses before Season 3 cash adjustments.</p>
           </div>
         </div>
         <div className="table-wrap">
@@ -147,37 +144,33 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
             <thead>
               <tr>
                 <th>Action</th>
-                <th className="n">S1 cash</th>
-                <th className="n">S2 cash</th>
-                <th className="n">S1 XP</th>
-                <th className="n">S2 XP</th>
-                <th className="n">S2 max streak bonus</th>
-                <th className="n">S2 best case</th>
+                <th className="n">Base cash</th>
+                <th className="n">Base XP</th>
+                <th className="n">Max streak bonus</th>
+                <th className="n">At max streak</th>
               </tr>
             </thead>
             <tbody>
               {[
-                { a: "Small crate (ground)", c1: S1.smallCrate.cash, c2: S2.smallCrate.cash, x1: S1.smallCrate.xpGround, x2: S2.smallCrate.xpGround, s: ST.crate },
-                { a: "Small crate (air)", c1: S1.smallCrate.cash, c2: S2.smallCrate.cash, x1: S1.smallCrate.xpAir, x2: S2.smallCrate.xpAir, s: ST.crate },
-                { a: "Large crate (ground)", c1: S1.largeCrate.cash, c2: S2.largeCrate.cash, x1: S1.largeCrate.xpGround, x2: S2.largeCrate.xpGround, s: ST.crate },
-                { a: "Large crate (air)", c1: S1.largeCrate.cash, c2: S2.largeCrate.cash, x1: S1.largeCrate.xpAir, x2: S2.largeCrate.xpAir, s: ST.crate },
-                { a: "Supply pallet (ground)", c1: S1.pallet.cash, c2: S2.pallet.cash, x1: S1.pallet.xpGround, x2: S2.pallet.xpGround, s: ST.pallet },
-                { a: "Supply pallet (air)", c1: S1.pallet.cash, c2: S2.pallet.cash, x1: S1.pallet.xpAir, x2: S2.pallet.xpAir, s: ST.pallet },
-                { a: "Passenger (air)", c1: S1.playerAir.cash, c2: S2.playerAir.cash, x1: S1.playerAir.xp, x2: S2.playerAir.xp, s: ST.player },
-                { a: "Passenger (ground)", c1: S1.playerGround.cash, c2: S2.playerGround.cash, x1: S1.playerGround.xp, x2: S2.playerGround.xp, s: ST.player },
-                { a: "Return trip (ground)", c1: S1.returnTrip.cash, c2: S2.returnTrip.cash, x1: S1.returnTrip.xp, x2: S2.returnTrip.xp, s: ST.returnTrip },
+                { a: "Small crate (ground)", cash: S2.smallCrate.cash, xp: S2.smallCrate.xpGround, s: ST.crate },
+                { a: "Small crate (air)", cash: S2.smallCrate.cash, xp: S2.smallCrate.xpAir, s: ST.crate },
+                { a: "Large crate (ground)", cash: S2.largeCrate.cash, xp: S2.largeCrate.xpGround, s: ST.crate },
+                { a: "Large crate (air)", cash: S2.largeCrate.cash, xp: S2.largeCrate.xpAir, s: ST.crate },
+                { a: "Supply pallet (ground)", cash: S2.pallet.cash, xp: S2.pallet.xpGround, s: ST.pallet },
+                { a: "Supply pallet (air)", cash: S2.pallet.cash, xp: S2.pallet.xpAir, s: ST.pallet },
+                { a: "Passenger (air)", cash: S2.playerAir.cash, xp: S2.playerAir.xp, s: ST.player },
+                { a: "Passenger (ground)", cash: S2.playerGround.cash, xp: S2.playerGround.xp, s: ST.player },
+                { a: "Return trip (ground)", cash: S2.returnTrip.cash, xp: S2.returnTrip.xp, s: ST.returnTrip },
               ].map((r) => (
                 <tr key={r.a}>
                   <td>{r.a}</td>
-                  <td className="n s1c">{fmtCash(r.c1)}</td>
-                  <td className="n">{fmtCash(r.c2)}</td>
-                  <td className="n s1c">{r.x1}</td>
-                  <td className="n">{r.x2}</td>
+                  <td className="n">{fmtCash(r.cash)}</td>
+                  <td className="n">{r.xp}</td>
                   <td className="n s2c">
                     +{fmtCash(r.s.cash * r.s.cap)} / +{r.s.xp * r.s.cap} XP
                   </td>
-                  <td className={`n ${r.x2 + r.s.xp * r.s.cap > r.x1 ? "yes" : "no"}`}>
-                    {fmtCash(r.c2 + r.s.cash * r.s.cap)} / {r.x2 + r.s.xp * r.s.cap} XP
+                  <td className="n">
+                    {fmtCash(r.cash + r.s.cash * r.s.cap)} / {r.xp + r.s.xp * r.s.cap} XP
                   </td>
                 </tr>
               ))}
@@ -268,21 +261,22 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                 <th>Role</th>
                 <th className="n">Run time</th>
                 <th>Cargo / trip</th>
-                <th className="n">S1 / hour</th>
                 <th className="n">S2 / hour</th>
+                <th className="n">S3 est. / hour</th>
                 <th className="n">Change</th>
-                <th className="n">Streak max (S2)</th>
-                <th>Drive back vs respawn (S2)</th>
+                <th className="n">Streak max (S3)</th>
+                <th>Drive back vs respawn (S3)</th>
               </tr>
             </thead>
             <tbody>
               {(Object.keys(MODE_LABEL) as Mode[]).map((m) => {
                 const inp = inputs[m];
                 const air = m === "heli" || m === "heliPeople";
-                const h1 = perHour(m, inp, "s1", metric);
-                const h2 = perHour(m, inp, "s2", metric);
-                const pct = h1 ? ((h2 - h1) / Math.abs(h1)) * 100 : 0;
-                const be = air ? null : breakEven(m, inp, "s2", metric);
+                const previous = perHour(m, inp, "s2", metric);
+                const estimate = perHour(m, inp, "s3", metric);
+                const delta = estimate - previous;
+                const pct = previous === 0 ? null : (delta / Math.abs(previous)) * 100;
+                const be = air ? null : breakEven(m, inp, "s3", metric);
                 const strat = effectiveStrategy(m, inp);
                 const rt = air ? inp.load + inp.roundTrip : inp.load + inp.toZone + (strat === "respawn" ? inp.respawn : inp.back);
                 const cargo = [
@@ -298,11 +292,10 @@ export default function StackingTable({ inputs, metric, setMetric }: { inputs: R
                     <td>{MODE_LABEL[m]}</td>
                     <td className="n">{rt} min</td>
                     <td className="muted">{cargo || "—"}</td>
-                    <td className="n s1c">{fmt(h1, metric)}</td>
-                    <td className="n s2c">{fmt(h2, metric)}</td>
-                    <td className={`n ${pct >= 0 ? "yes" : "no"}`}>
-                      {pct >= 0 ? "+" : ""}
-                      {Math.round(pct)}%
+                    <td className="n s2c">{fmt(previous, metric)}</td>
+                    <td className="n s3c">{fmt(estimate, metric)}</td>
+                    <td className={`n ${delta >= 0 ? "yes" : "no"}`}>
+                      {pct === null ? fmt(delta, metric) : `${pct >= 0 ? "+" : ""}${Math.round(pct)}%`}
                     </td>
                     <td className="n">{(() => { const r = streakMaxRuns(m, inp, strat); return r.all != null ? `Run ${r.all}` : "—"; })()}</td>
                     <td className="muted">

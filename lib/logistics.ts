@@ -1,12 +1,7 @@
-// ─────────────────────────────────────────────────────────────
-//  WARDOGS logistics math.
-//  Every number below comes from the Season 02 patch notes
-//  (14 Oct 2026). Season 1 values are the "before" side of each
-//  arrow in those notes. Anything the notes don't spell out is an
-//  ASSUMPTION and is marked as such — the UI lets people change it.
-// ─────────────────────────────────────────────────────────────
+// Season 2 reward rates are the comparison baseline. Season 3 uses those
+// rates with user-entered cash adjustments where the launch notes give no values.
 
-export type Season = "s1" | "s2";
+export type Season = "s2" | "s3";
 export type Mode = "heli" | "driver" | "heliPeople" | "driverPeople";
 export type Metric = "xp" | "cash";
 export type Strategy = "driveBack" | "respawn";
@@ -43,42 +38,29 @@ export interface SeasonRates {
     pallet: StreakDef;
     player: StreakDef;
     returnTrip: StreakDef;
-  } | null;
-  /** Total role-track XP needed for each level */
-  roleXp: Record<number, number>;
+  };
 }
 
-export const RATES: Record<Season, SeasonRates> = {
-  s1: {
-    label: "Season 1",
-    smallCrate: { cash: 500, xpGround: 250, xpAir: 200 },
-    largeCrate: { cash: 1000, xpGround: 500, xpAir: 400 },
-    pallet: { cash: 2500, xpGround: 750, xpAir: 500 },
-    playerAir: { cash: 150, xp: 50 },
-    playerGround: { cash: 500, xp: 50 }, // XP not listed separately → assumed same as air
-    returnTrip: { cash: 250, xp: 100 },
-    streaks: null, // streaks are new in Season 2
-    roleXp: { 10: 35000, 15: 110000, 20: 250000, 25: 365000, 30: 500000, 35: 750000, 40: 975000, 45: 1225000, 50: 1500000 },
-  },
-  s2: {
-    label: "Season 2",
-    smallCrate: { cash: 250, xpGround: 200, xpAir: 150 },
-    largeCrate: { cash: 500, xpGround: 400, xpAir: 300 },
-    pallet: { cash: 1250, xpGround: 500, xpAir: 400 },
-    playerAir: { cash: 100, xp: 25 },
-    playerGround: { cash: 350, xp: 25 }, // XP not listed separately → assumed same as air
-    returnTrip: { cash: 150, xp: 50 },
-    streaks: {
-      crate: { cash: 100, xp: 50, cap: 10 },
-      pallet: { cash: 150, xp: 25, cap: 10 }, // stealth hotfix: was +$250 / +100 XP per level
-      player: { cash: 25, xp: 5, cap: 25 },
-      returnTrip: { cash: 50, xp: 25, cap: 10 },
-    },
-    roleXp: { 10: 25000, 15: 54750, 20: 111500, 25: 206600, 30: 318200, 35: 525000, 40: 712500, 45: 920850, 50: 1150000 },
+const SEASON_2: SeasonRates = {
+  label: "Season 2",
+  smallCrate: { cash: 250, xpGround: 200, xpAir: 150 },
+  largeCrate: { cash: 500, xpGround: 400, xpAir: 300 },
+  pallet: { cash: 1250, xpGround: 500, xpAir: 400 },
+  playerAir: { cash: 100, xp: 25 },
+  playerGround: { cash: 350, xp: 25 }, // XP not listed separately → assumed same as air
+  returnTrip: { cash: 150, xp: 50 },
+  streaks: {
+    crate: { cash: 100, xp: 50, cap: 10 },
+    pallet: { cash: 150, xp: 25, cap: 10 }, // stealth hotfix: was +$250 / +100 XP per level
+    player: { cash: 25, xp: 5, cap: 25 },
+    returnTrip: { cash: 50, xp: 25, cap: 10 },
   },
 };
 
-export const LEVELS = [10, 15, 20, 25, 30, 35, 40, 45, 50];
+export const RATES: Record<Season, SeasonRates> = {
+  s2: SEASON_2,
+  s3: { ...SEASON_2, label: "Season 3 estimate" },
+};
 
 export interface Inputs {
   // timing (minutes)
@@ -102,6 +84,10 @@ export interface Inputs {
   smallCost: number; // price per small crate, bought every run
   largeCost: number; // price per large crate
   palletCost: number; // price per pallet
+  // Percentage of the Season 2 base cash payout used in the Season 3 estimate.
+  smallCrateCashPercent: number;
+  largeCrateCashPercent: number;
+  palletCashPercent: number;
   // FOB deposit award. Supply pallets only.
   fobDeposit: boolean;
   fobAmount: number; // cash per supply pallet deposited into a FOB
@@ -114,6 +100,7 @@ const BASE: Inputs = {
   small: 0, large: 0, pallets: 0, passengers: 0,
   strategy: "driveBack", heliReturnTrip: false, deathResetsStreaks: true, streakRule: "afterFirst",
   vehicleCost: 0, smallCost: 200, largeCost: 400, palletCost: 400,
+  smallCrateCashPercent: 100, largeCrateCashPercent: 100, palletCashPercent: 100,
   fobDeposit: true, fobAmount: 1800,
   sessionMin: 90,
 };
@@ -151,7 +138,7 @@ export interface RunRow {
   cumCash: number;
   cumXp: number;
   streak: { small: number; large: number; pallet: number; player: number; returnTrip: number };
-  /** Streak level each item got this run (Season 2 only; empty in Season 1). */
+  /** Streak level each item got this run. */
   lv: { small: number[]; large: number[]; pallet: number[]; player: number[]; ret: number | null };
   b: Breakdown;
 }
@@ -213,6 +200,10 @@ export function simulate(
   strategy: Strategy = effectiveStrategy(mode, inp),
 ): RunRow[] {
   const R = RATES[season];
+  const baseCashMultiplier = (percent: number) => season === "s3" ? percent / 100 : 1;
+  const smallCash = R.smallCrate.cash * baseCashMultiplier(inp.smallCrateCashPercent);
+  const largeCash = R.largeCrate.cash * baseCashMultiplier(inp.largeCrateCashPercent);
+  const palletCash = R.pallet.cash * baseCashMultiplier(inp.palletCashPercent);
   const air = isAir(mode);
   const rt = runMinutes(mode, inp, strategy);
   const returnPaid = paysReturnTrip(mode, inp, strategy);
@@ -242,37 +233,35 @@ export function simulate(
     };
 
     // crates (small and large are separate stacks)
-    b.crates.cash = inp.small * R.smallCrate.cash + inp.large * R.largeCrate.cash;
+    b.crates.cash = inp.small * smallCash + inp.large * largeCash;
     b.crates.xp =
       inp.small * (air ? R.smallCrate.xpAir : R.smallCrate.xpGround) +
       inp.large * (air ? R.largeCrate.xpAir : R.largeCrate.xpGround);
-    b.pallets.cash = inp.pallets * R.pallet.cash;
+    b.pallets.cash = inp.pallets * palletCash;
     b.pallets.xp = inp.pallets * (air ? R.pallet.xpAir : R.pallet.xpGround);
     const pr = air ? R.playerAir : R.playerGround;
     b.players.cash = inp.passengers * pr.cash;
     b.players.xp = inp.passengers * pr.xp;
     if (returnPaid) b.returnTrip = { ...R.returnTrip };
 
-    if (R.streaks) {
-      const S = R.streaks;
-      const rule = inp.streakRule;
-      const bonus = (prior: number, rowRuns: number, count: number, def: StreakDef): Reward =>
-        rule === "perRun" ? perRunBonus(rowRuns, count, def) : streakBonus(prior, count, def, rule);
-      const sSmall = bonus(st.small, runsInRow.small, inp.small, S.crate);
-      const sLarge = bonus(st.large, runsInRow.large, inp.large, S.crate);
-      b.crateStreak = { cash: sSmall.cash + sLarge.cash, xp: sSmall.xp + sLarge.xp };
-      b.palletStreak = bonus(st.pallet, runsInRow.pallet, inp.pallets, S.pallet);
-      const levelsFor = (prior: number, rowRuns: number, count: number, cap: number) =>
-        Array.from({ length: count }, (_, i) => (rule === "perRun" ? Math.min(rowRuns, cap) : steps(prior + i + 1, cap, rule)));
-      lv.small = levelsFor(st.small, runsInRow.small, inp.small, S.crate.cap);
-      lv.large = levelsFor(st.large, runsInRow.large, inp.large, S.crate.cap);
-      lv.pallet = levelsFor(st.pallet, runsInRow.pallet, inp.pallets, S.pallet.cap);
-      lv.player = levelsFor(st.player, runsInRow.player, inp.passengers, S.player.cap);
-      if (returnPaid) lv.ret = steps(st.returnTrip + 1, S.returnTrip.cap, rule === "fromFirst" ? "fromFirst" : "afterFirst");
-      b.playerStreak = bonus(st.player, runsInRow.player, inp.passengers, S.player);
-      // one return trip per run: first return trip pays base only, the next is +1 (except under "fromFirst")
-      if (returnPaid) b.returnStreak = streakBonus(st.returnTrip, 1, S.returnTrip, rule === "fromFirst" ? "fromFirst" : "afterFirst");
-    }
+    const S = R.streaks;
+    const rule = inp.streakRule;
+    const bonus = (prior: number, rowRuns: number, count: number, def: StreakDef): Reward =>
+      rule === "perRun" ? perRunBonus(rowRuns, count, def) : streakBonus(prior, count, def, rule);
+    const sSmall = bonus(st.small, runsInRow.small, inp.small, S.crate);
+    const sLarge = bonus(st.large, runsInRow.large, inp.large, S.crate);
+    b.crateStreak = { cash: sSmall.cash + sLarge.cash, xp: sSmall.xp + sLarge.xp };
+    b.palletStreak = bonus(st.pallet, runsInRow.pallet, inp.pallets, S.pallet);
+    const levelsFor = (prior: number, rowRuns: number, count: number, cap: number) =>
+      Array.from({ length: count }, (_, i) => (rule === "perRun" ? Math.min(rowRuns, cap) : steps(prior + i + 1, cap, rule)));
+    lv.small = levelsFor(st.small, runsInRow.small, inp.small, S.crate.cap);
+    lv.large = levelsFor(st.large, runsInRow.large, inp.large, S.crate.cap);
+    lv.pallet = levelsFor(st.pallet, runsInRow.pallet, inp.pallets, S.pallet.cap);
+    lv.player = levelsFor(st.player, runsInRow.player, inp.passengers, S.player.cap);
+    if (returnPaid) lv.ret = steps(st.returnTrip + 1, S.returnTrip.cap, rule === "fromFirst" ? "fromFirst" : "afterFirst");
+    b.playerStreak = bonus(st.player, runsInRow.player, inp.passengers, S.player);
+    // one return trip per run: first return trip pays base only, the next is +1 (except under "fromFirst")
+    if (returnPaid) b.returnStreak = streakBonus(st.returnTrip, 1, S.returnTrip, rule === "fromFirst" ? "fromFirst" : "afterFirst");
     if (inp.small) runsInRow.small++;
     if (inp.large) runsInRow.large++;
     if (inp.pallets) runsInRow.pallet++;
@@ -308,9 +297,9 @@ export function simulate(
   return rows;
 }
 
-/** First Season 2 run where every streak has hit its cap (pay per run stops growing). null if it never grows. */
+/** First run where every streak has hit its cap (pay per run stops growing). null if it never grows. */
 export function streakMaxRun(mode: Mode, inp: Inputs, strategy = effectiveStrategy(mode, inp)): number | null {
-  const rows = simulate(mode, inp, "s2", 60, strategy);
+  const rows = simulate(mode, inp, "s3", 60, strategy);
   const steady = rows[rows.length - 1].xp;
   if (rows[0].xp === steady) return null;
   const i = rows.findIndex((r, k) => rows.slice(k).every((x) => x.xp === steady));
@@ -326,10 +315,10 @@ export interface MaxRuns {
   all: number | null;
 }
 
-/** For each streak counter, the first Season 2 run where every item in that run is at the cap. */
+/** For each streak counter, the first run where every item in that run is at the cap. */
 export function streakMaxRuns(mode: Mode, inp: Inputs, strategy = effectiveStrategy(mode, inp)): MaxRuns {
-  const S = RATES.s2.streaks!;
-  const rows = simulate(mode, inp, "s2", 60, strategy);
+  const S = RATES.s3.streaks;
+  const rows = simulate(mode, inp, "s3", 60, strategy);
   const first = (pick: (r: RunRow) => number[], cap: number) => {
     const i = rows.findIndex((r) => pick(r).length > 0 && pick(r).every((l) => l >= cap));
     return i < 0 ? null : i + 1;
@@ -346,7 +335,7 @@ export function streakMaxRuns(mode: Mode, inp: Inputs, strategy = effectiveStrat
 
 /** Short text of the streak levels one run got, e.g. "Pallets +0, +1 · Return +0". */
 export function levelText(r: RunRow): string {
-  const S = RATES.s2.streaks!;
+  const S = RATES.s3.streaks;
   const list = (a: number[], cap: number) => {
     if (a.every((l) => l >= cap)) return `+${cap} (max)`;
     if (a.length > 3) return `+${a[0]}–${a[a.length - 1] >= cap ? "max" : "+" + a[a.length - 1]}`;
@@ -434,47 +423,6 @@ export function breakEvenCurve(mode: Mode, inp: Inputs, season: Season, metric: 
     out.push({ back: b, drive: Math.round(perHour(mode, { ...inp, back: b }, season, metric, "driveBack")), respawn: Math.round(respawnRate) });
   }
   return out;
-}
-
-/** Minutes of logistics to reach a role level, starting from 0 XP. */
-export function minutesToLevel(mode: Mode, inp: Inputs, season: Season, level: number, strategy = effectiveStrategy(mode, inp)): number | null {
-  const need = RATES[season].roleXp[level];
-  if (!need) return null;
-  const rows = simulate(mode, inp, season, 1, strategy);
-  if (rows[0].xp <= 0) return null;
-  // simulate in chunks until we pass the threshold
-  let n = 50;
-  while (n <= 20000) {
-    const all = simulate(mode, inp, season, n, strategy);
-    const hit = all.find((r) => r.cumXp >= need);
-    if (hit) return hit.endMin;
-    n *= 4;
-  }
-  return null;
-}
-
-/** First run at which Season 2 pays more than Season 1 for that single run. */
-export function firstRunS2Wins(mode: Mode, inp: Inputs, metric: Metric, maxRuns = 60): number | null {
-  const a = simulate(mode, inp, "s1", maxRuns);
-  const b = simulate(mode, inp, "s2", maxRuns);
-  for (let i = 0; i < maxRuns; i++) {
-    const v1 = metric === "xp" ? a[i].xp : a[i].cash;
-    const v2 = metric === "xp" ? b[i].xp : b[i].cash;
-    if (v2 > v1) return i + 1;
-  }
-  return null;
-}
-
-/** First run after which Season 2's running total overtakes Season 1's. */
-export function cumulativeCrossover(mode: Mode, inp: Inputs, metric: Metric, maxRuns = 200): { run: number; minute: number } | null {
-  const a = simulate(mode, inp, "s1", maxRuns);
-  const b = simulate(mode, inp, "s2", maxRuns);
-  for (let i = 0; i < maxRuns; i++) {
-    const v1 = metric === "xp" ? a[i].cumXp : a[i].cumCash;
-    const v2 = metric === "xp" ? b[i].cumXp : b[i].cumCash;
-    if (v2 > v1) return { run: i + 1, minute: b[i].endMin };
-  }
-  return null;
 }
 
 export const fmtCash = (n: number) => (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString("en-US");

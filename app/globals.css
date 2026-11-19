@@ -11,10 +11,10 @@
   --muted: #9aa49b;
   --faint: #6c766d;
 
-  --accent: #f0b23c; /* Season 2 / call to action */
+  --accent: #f0b23c; /* Season 3 / call to action */
   --accent-ink: #1a1405;
-  --s1: #8ea4b9; /* Season 1 */
-  --s2: #f0b23c; /* Season 2 */
+  --s2: #8ea4b9; /* Season 2 */
+  --s3: #f0b23c; /* Season 3 */
 
   --buff: #5ccf87;
   --nerf: #ff6e6e;
@@ -295,8 +295,8 @@ td.wrap { white-space: normal; min-width: 220px; }
 .no { color: var(--nerf); font-weight: 700; }
 .maybe { color: var(--accent); font-weight: 700; }
 .muted { color: var(--muted); }
-.s1c { color: var(--s1); }
 .s2c { color: var(--s2); }
+.s3c { color: var(--s3); }
 
 .foot { color: var(--faint); font-size: 12px; padding: 30px 0 40px; border-top: 1px solid var(--border); margin-top: 40px; }
 details summary { cursor: pointer; color: var(--muted); font-weight: 600; font-size: 14px; }
@@ -350,23 +350,6 @@ details[open] summary { margin-bottom: 10px; }
 /* Patch notes filter bar: sticky on desktop, normal scroll on phones */
 .filter-bar { position: sticky; top: 68px; z-index: 20; }
 @media (max-width: 640px) { .filter-bar { position: static; } }
-
-/* ───────── Hotfix banner ───────── */
-.hotfix-banner {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--nerf) 28%, var(--bg)), color-mix(in srgb, var(--nerf) 12%, var(--bg)));
-  border-bottom: 1px solid color-mix(in srgb, var(--nerf) 55%, transparent);
-}
-.hotfix-banner .container { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding-top: 14px; padding-bottom: 14px; }
-.hotfix-banner strong {
-  font-family: var(--font-head); font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
-  font-size: clamp(18px, 2.6vw, 26px); line-height: 1.15; color: #fff;
-}
-.hotfix-tag {
-  background: var(--nerf); color: #1a0505; font-weight: 800; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-  padding: 3px 8px; border-radius: 4px;
-}
-.hotfix-detail { flex-basis: 100%; color: color-mix(in srgb, #fff 78%, var(--nerf)); font-size: 14px; }
-@media (max-width: 640px) { .hotfix-detail { font-size: 13px; } }
 
 /* ───────── Run-by-run table ───────── */
 .stat .value-2 { font-family: var(--font-mono); font-size: 15px; font-weight: 700; margin-top: 2px; color: var(--text); font-variant-numeric: tabular-nums; }
